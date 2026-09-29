@@ -4,7 +4,7 @@ from .models import Documento, ItemActa, NotaRecibida
 
 
 class DocumentoForm(forms.ModelForm):
-    estado = forms.ChoiceField(choices=Documento.ESTADO_CHOICES, required=False, initial='BORRADOR')
+    estado = forms.ChoiceField(choices=Documento.ESTADO_CHOICES, required=False, initial='EMITIDO')
 
     class Meta:
         model = Documento

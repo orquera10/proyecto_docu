@@ -13,7 +13,8 @@ def sidebar_context(request):
     informes_count = Documento.objects.filter(tipo='INFORME').count()
     actas_count = Documento.objects.filter(tipo='ACTA').count()
     total_count = Documento.objects.count()
-    borradores_count = Documento.objects.filter(estado='BORRADOR').count()
+    emitidos_count = Documento.objects.filter(estado='EMITIDO').count()
+    entregados_count = Documento.objects.filter(estado='ENTREGADO').count()
 
     recibidos_total = NotaRecibida.objects.count()
     recibidos_pendientes = NotaRecibida.objects.filter(estado='PENDIENTE').count()
@@ -26,7 +27,8 @@ def sidebar_context(request):
         'conteo_informes': informes_count,
         'conteo_actas': actas_count,
         'conteo_total': total_count,
-        'conteo_borradores': borradores_count,
+        'conteo_emitidos': emitidos_count,
+        'conteo_entregados': entregados_count,
         'conteo_recibidos_total': recibidos_total,
         'conteo_recibidos_pendientes': recibidos_pendientes,
         'nombre_usuario': nombre_usuario,

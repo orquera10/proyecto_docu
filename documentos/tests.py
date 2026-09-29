@@ -125,16 +125,18 @@ class PlantillasSNAFTests(TestCase):
             'fecha': '2026-09-22',
             'remitente': 'Ing. Carlos Mendoza',
             'destinatario': 'Dra. Marta Iriarte',
+            'destinatario_cargo': 'A LA SECRETARIA',
+            'destinatario_nombre': 'DRA. MARTA IRIARTE',
             'asunto': 'Solicitud urgente de insumos TI',
             'cuerpo': 'Solicitud formal de discos SSD y estabilizadores para SNAF.',
-            'estado': 'BORRADOR',
-            'accion_guardar': 'borrador'
+            'estado': 'EMITIDO',
+            'accion_guardar': 'emitir'
         }, follow=True)
         self.assertEqual(response.status_code, 200)
         doc = Documento.objects.filter(asunto='Solicitud urgente de insumos TI').first()
         self.assertIsNotNone(doc)
         self.assertEqual(doc.tipo, 'NOTA')
-        self.assertEqual(doc.estado, 'BORRADOR')
+        self.assertEqual(doc.estado, 'EMITIDO')
 
     def test_preformatos_dependen_del_tipo_seleccionado(self):
         response = self.client.get('/documentos/nuevo/')

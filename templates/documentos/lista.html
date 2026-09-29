@@ -87,7 +87,6 @@
         <label class="filter-label" for="filter-estado">Estado de Firma</label>
         <select name="estado" id="filter-estado" class="filter-select-input" onchange="this.form.submit()">
           <option value="">Todos los estados</option>
-          <option value="BORRADOR" {% if estado_filtro == 'BORRADOR' %}selected{% endif %}>Borrador</option>
           <option value="EMITIDO" {% if estado_filtro == 'EMITIDO' %}selected{% endif %}>Emitido</option>
           <option value="ENTREGADO" {% if estado_filtro == 'ENTREGADO' %}selected{% endif %}>Entregado / Firmado</option>
         </select>

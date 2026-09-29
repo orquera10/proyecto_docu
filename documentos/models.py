@@ -11,7 +11,6 @@ class Documento(models.Model):
         ('ACTA', 'Acta de Entrega'),
     ]
     ESTADO_CHOICES = [
-        ('BORRADOR', 'Borrador'),
         ('EMITIDO', 'Emitido'),
         ('ENTREGADO', 'Entregado'),
     ]
@@ -27,7 +26,7 @@ class Documento(models.Model):
     receptor_nombre = models.CharField('Nombre y Apellido de quien recibe', max_length=150, blank=True, default='')
     receptor_dni = models.CharField('DNI de quien recibe', max_length=30, blank=True, default='')
     cuerpo = models.TextField('Contenido', blank=True, default='')
-    estado = models.CharField('Estado', max_length=10, choices=ESTADO_CHOICES, default='BORRADOR')
+    estado = models.CharField('Estado', max_length=10, choices=ESTADO_CHOICES, default='EMITIDO')
     creado_por = models.ForeignKey(User, on_delete=models.PROTECT, related_name='documentos', verbose_name='Creado por')
     creado_en = models.DateTimeField('Creado el', auto_now_add=True)
     modificado_en = models.DateTimeField('Modificado el', auto_now=True)

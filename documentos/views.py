@@ -225,7 +225,6 @@ def dashboard(request):
         'INFORME': Documento.objects.filter(tipo='INFORME').count(),
         'ACTA': Documento.objects.filter(tipo='ACTA').count(),
     }
-    borradores = Documento.objects.filter(estado='BORRADOR').count()
     emitidos = Documento.objects.filter(estado='EMITIDO').count()
     entregados = Documento.objects.filter(estado='ENTREGADO').count()
     recientes = Documento.objects.select_related('creado_por').order_by('-creado_en')[:6]
@@ -233,7 +232,6 @@ def dashboard(request):
     return render(request, 'documentos/dashboard.html', {
         'total': total,
         'por_tipo': por_tipo,
-        'borradores': borradores,
         'emitidos': emitidos,
         'entregados': entregados,
         'recientes': recientes,
@@ -365,14 +363,6 @@ def guardar_adjuntos(request, doc):
 @login_required
 def detalle_documento(request, pk):
     doc = get_object_or_404(Documento, pk=pk)
-    
-    # Acción rápida para aprobar/emitir borrador
-    if request.method == 'POST' and 'accion_aprobar' in request.POST:
-        if doc.estado == 'BORRADOR':
-            doc.estado = 'EMITIDO'
-            doc.save()
-            messages.success(request, f'Documento {doc.numero} aprobado y emitido exitosamente.')
-            return redirect('detalle_documento', pk=doc.pk)
 
     # Acción rápida para marcar como entregado / firmado
     if request.method == 'POST' and 'accion_entregar' in request.POST:
@@ -446,13 +436,7 @@ def crear_documento(request):
         if form.is_valid():
             doc = form.save(commit=False)
             doc.creado_por = request.user
-
-            # Si el usuario hace clic en "Guardar Borrador"
-            accion = request.POST.get('accion_guardar', '')
-            if accion == 'borrador':
-                doc.estado = 'BORRADOR'
-            elif accion == 'emitir':
-                doc.estado = 'EMITIDO'
+            doc.estado = 'EMITIDO'
 
             # Validar formset solo para ACTA
             if tipo == 'ACTA' and formset is not None:
@@ -490,7 +474,7 @@ def crear_documento(request):
             'tipo': tipo_param,
             'fecha': date.today(),
             'remitente': remitente_default,
-            'estado': 'BORRADOR',
+            'estado': 'EMITIDO',
         }
 
         formset = ItemActaFormSet(prefix='items')
@@ -582,12 +566,8 @@ def editar_documento(request, pk):
         formset = ItemActaFormSet(request.POST, instance=doc, prefix='items') if doc.tipo == 'ACTA' else None
 
         if form.is_valid():
-            accion = request.POST.get('accion_guardar', '')
             doc_obj = form.save(commit=False)
-            if accion == 'borrador':
-                doc_obj.estado = 'BORRADOR'
-            elif accion == 'emitir':
-                doc_obj.estado = 'EMITIDO'
+            doc_obj.estado = 'EMITIDO'
 
             # Procesar adjuntos marcados para eliminar
             eliminar_ids = request.POST.getlist('eliminar_adjunto')

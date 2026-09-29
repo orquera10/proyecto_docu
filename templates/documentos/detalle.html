@@ -89,15 +89,7 @@
 
 {% block topbar_actions %}
   <div class="doc-action-bar" style="margin-bottom: 0;">
-    {% if doc.estado == 'BORRADOR' %}
-      <form method="post" style="display:inline;">
-        {% csrf_token %}
-        <button type="submit" name="accion_aprobar" value="1" class="btn btn-success" title="Aprobar y emitir documento">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
-          <span>Aprobar</span>
-        </button>
-      </form>
-    {% elif doc.estado == 'EMITIDO' %}
+    {% if doc.estado == 'EMITIDO' %}
       <form method="post" style="display:inline;" onsubmit="return confirm('¿Confirmar que este documento fue impreso, firmado y entregado?\n\nAl marcarlo como Entregado, quedará bloqueado y ya no se podrá modificar.');">
         {% csrf_token %}
         <button type="submit" name="accion_entregar" value="1" class="btn btn-primary" style="background: #6366f1; border-color: #4f46e5;" title="Registrar como impreso, firmado y entregado">
