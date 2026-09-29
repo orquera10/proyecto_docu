@@ -45,7 +45,8 @@ services:
       - GUNICORN_TIMEOUT=${GUNICORN_TIMEOUT:-120}
     volumes:
       # Persistencia de archivos PDF, escaneos y adjuntos subidos
-      - docu_media:/app/media
+      # Bind mount al disco de 100GB montado en /mnt/datos
+      - /mnt/datos/docu/media:/app/media
       # Persistencia de la base de datos SQLite (si se usa SQLite en vez de Postgres)
       - docu_data:/app/data
     healthcheck:
@@ -75,23 +76,13 @@ services:
   #     retries: 5
 
 volumes:
-  # Volumen para PDFs y archivos generados
-  # ----------------------------------------------------
-  # Opción A: Volumen Docker estándar (por defecto)
-  docu_media:
-    name: docu_media_volume
-
-  # Opción B: Carpeta compartida de Windows (SMB/CIFS) directamente como volumen de Docker
-  # (Requiere 'cifs-utils' instalado en el servidor host de Coolify)
-  # docu_media:
-  #   driver: local
-  #   driver_opts:
-  #     type: cifs
-  #     o: "username=${SMB_USER},password=${SMB_PASS},domain=${SMB_DOMAIN:-},vers=3.0,file_mode=0777,dir_mode=0777"
-  #     device: "//${SMB_SERVER_IP}/${SMB_SHARE_NAME}"
-
+  # Volumen para SQLite (si no se usa PostgreSQL)
   docu_data:
     name: docu_data_volume
 
   # docu_postgres_data:
   #   name: docu_postgres_volume
+
+# NOTA: Los PDFs y archivos media se almacenan mediante bind mount
+# directo al disco de 100GB montado en /mnt/datos/docu/media
+# No se usa volumen Docker para media, se usa la ruta del host.
