@@ -429,12 +429,12 @@ a {
 }
 
 .topbar-search-input {
-  width: 190px;
+  width: 280px;
   padding: 8px 14px 8px 36px;
   background-color: var(--bg-card);
   border: 1px solid var(--border-color);
   border-radius: var(--radius-pill);
-  font-size: 12.5px;
+  font-size: 13px;
   color: var(--text-main);
   outline: none;
   transition: var(--transition);
@@ -447,7 +447,7 @@ a {
 .topbar-search-input:focus {
   border-color: var(--primary);
   box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
-  width: 230px;
+  width: 350px;
 }
 
 .search-input-icon {
