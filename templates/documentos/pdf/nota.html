@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>{{ doc.numero }}</title>
+  <style>
+    @page {
+      size: A4;
+      margin: 2.0cm 2.0cm 1.8cm 2.0cm;
+      @frame encabezado_frame {
+        -pdf-frame-content: encabezado;
+        left: 56.69pt; top: 14pt; width: 481.89pt; height: 50pt;
+      }
+      @frame pie_frame {
+        -pdf-frame-content: pie;
+        left: 56.69pt; top: 785pt; width: 481.89pt; height: 35pt;
+      }
+    }
+    * { margin: 0; padding: 0; }
+    body {
+      font-family: Arial, Helvetica, sans-serif;
+      font-size: 11pt;
+      color: #000000;
+      line-height: 1.45;
+    }
+
+    /* ── LUGAR Y FECHA ───────────────────────────────────── */
+    .fecha-linea {
+      text-align: right;
+      font-size: 11pt;
+      margin-bottom: 12pt;
+      color: #000000;
+    }
+
+    /* ── DESTINATARIO ────────────────────────────────────── */
+    .destinatario-bloque {
+      margin-bottom: 12pt;
+      font-size: 11pt;
+      line-height: 1.4;
+    }
+    .destinatario-bloque p {
+      margin: 0;
+      line-height: 1.4;
+    }
+
+    /* ── ASUNTO / REF ────────────────────────────────────── */
+    .asunto-linea {
+      font-weight: bold;
+      margin-bottom: 10pt;
+      font-size: 11pt;
+    }
+
+    /* ── CUERPO ──────────────────────────────────────────── */
+    .cuerpo {
+      text-align: justify;
+      font-size: 11pt;
+      line-height: 1.45;
+      margin-bottom: 12pt;
+    }
+
+    /* ── TABLAS DENTRO DEL CUERPO ────────────────────────── */
+    .tabla-cuerpo-pdf {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 8pt 0 10pt 0;
+    }
+    .tabla-cuerpo-pdf th {
+      border: 0.75pt solid #333333;
+      padding: 4pt 6pt;
+      background-color: #f1f5f9;
+      font-weight: bold;
+      font-size: 10pt;
+    }
+    .tabla-cuerpo-pdf td {
+      border: 0.75pt solid #333333;
+      padding: 4pt 6pt;
+      font-size: 9.5pt;
+      line-height: 1.35;
+    }
+
+    /* ── FIRMAS DOBLES AL MISMO NIVEL ────────────────────── */
+    .firmas-tabla {
+      width: 100%;
+    }
+    .firma-columna {
+      width: 45%;
+      text-align: center;
+      vertical-align: top;
+    }
+    .firma-espaciador {
+      width: 10%;
+    }
+    .firma-caja {
+      width: 195pt;
+      margin: 0 auto;
+    }
+    .firma-linea-td {
+      border-top: 1px solid #000000;
+      padding-top: 6pt;
+      text-align: center;
+    }
+    .firma-nombre {
+      font-size: 11pt;
+      color: #000000;
+    }
+    .firma-cargo {
+      font-size: 10pt;
+      color: #000000;
+      margin-top: 2pt;
+    }
+
+    /* ── PIE DE PÁGINA ───────────────────────────────────── */
+    .footer { font-size: 8pt; color: #666666; line-height: 1.2; }
+    .footer-tabla { width: 100%; }
+    .footer-tabla td {
+      width: 50%; vertical-align: top;
+      border-top: 0.5pt solid #bbbbbb;
+      padding-top: 6pt;
+      font-size: 8pt;
+      line-height: 1.2;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ENCABEZADO INSTITUCIONAL BANNER -->
+  <div id="encabezado">
+    <div style="text-align: right; margin-bottom: 3pt;">
+      <img src="{{ encabezado_uri }}" style="width: 260pt; height: 32.5pt;" />
+    </div>
+    <div style="border-bottom: 1.5pt solid #777777; width: 100%;"></div>
+  </div>
+
+  <!-- LUGAR Y FECHA -->
+  <div class="fecha-linea">
+    San Salvador de Jujuy, {{ doc.fecha.day }} de {{ doc.fecha|date:"F"|lower }} de {{ doc.fecha.year }}.
+  </div>
+
+  <!-- DESTINATARIO -->
+  <div class="destinatario-bloque">
+    {% if doc.cargo_display %}
+      <p><strong>{{ doc.cargo_display|upper|linebreaksbr }}</strong></p>
+    {% endif %}
+    {% if doc.nombre_display %}
+      <p><strong>{{ doc.nombre_display|upper }}</strong></p>
+    {% endif %}
+    {% if not doc.cargo_display and not doc.nombre_display and doc.destinatario %}
+      <p><strong>{{ doc.destinatario|upper|linebreaksbr }}</strong></p>
+    {% endif %}
+    <p style="margin-top: 4pt;"><u><strong>SU DESPACHO:</strong></u></p>
+  </div>
+
+  <!-- ASUNTO / REF -->
+  {% if doc.asunto %}
+  <div class="asunto-linea">
+    Ref.: {{ doc.asunto }}
+  </div>
+  {% endif %}
+
+  <!-- CUERPO -->
+  <div class="cuerpo">{{ cuerpo_html }}</div>
+
+  <!-- PÁRRAFO DE CIERRE OFICIAL -->
+  {% if "sin otro particular" not in doc.cuerpo|lower and "en espera de una respuesta favorable" not in doc.cuerpo|lower %}
+  <div style="margin-top: 10pt; margin-bottom: 12pt; font-size: 11pt; color: #000000; text-align: justify; line-height: 1.45;">
+    Sin otro particular y en espera de una respuesta favorable me despido de Ud. con atenta consideración y respeto.-
+  </div>
+  {% endif %}
+
+  <!-- FIRMAS DOBLES AL MISMO NIVEL -->
+  <table class="firmas-tabla" cellpadding="0" cellspacing="0" style="margin-top: {{ firma_margin_top|default:25 }}pt;">
+    <tr>
+      <td class="firma-columna">
+        <div class="firma-caja">
+          <table cellpadding="0" cellspacing="0" style="width: 100%;">
+            <tr><td class="firma-linea-td">
+              <div class="firma-nombre">Alexander Magaña</div>
+              <div class="firma-cargo">Departamento Informática</div>
+            </td></tr>
+          </table>
+        </div>
+      </td>
+      <td class="firma-espaciador"></td>
+      <td class="firma-columna">
+        <div class="firma-caja">
+          <table cellpadding="0" cellspacing="0" style="width: 100%;">
+            <tr><td class="firma-linea-td">
+              <div class="firma-nombre">Darío Joaquín Orquera</div>
+              <div class="firma-cargo">Departamento Informática</div>
+            </td></tr>
+          </table>
+        </div>
+      </td>
+    </tr>
+  </table>
+
+  <!-- PIE DE PÁGINA -->
+  <div id="pie" class="footer">
+    <table class="footer-tabla" cellpadding="0" cellspacing="0">
+      <tr>
+        <td>
+          Área de Informática<br/>
+          Secretaría de Niñez, Adolescencia y Familia
+        </td>
+        <td style="text-align:right;">
+          Página <pdf:pagenumber> de <pdf:pagecount><br/>
+          {{ doc.numero }}
+        </td>
+      </tr>
+    </table>
+  </div>
+
+</body>
+</html>

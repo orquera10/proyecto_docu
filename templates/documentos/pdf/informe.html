@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>{{ doc.numero }}</title>
+  <style>
+    @page {
+      size: A4;
+      margin: 2.0cm 2.0cm 1.8cm 2.0cm;
+      @frame pie_frame {
+        -pdf-frame-content: pie;
+        left: 56.69pt; top: 785pt; width: 481.89pt; height: 35pt;
+      }
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: Arial, Helvetica, sans-serif;
+      font-size: 11pt;
+      color: #000000;
+      line-height: 1.45;
+    }
+
+    /* ── LUGAR Y FECHA ───────────────────────────────────── */
+    .fecha-linea {
+      text-align: right;
+      font-size: 11pt;
+      margin-bottom: 12pt;
+      color: #000000;
+    }
+
+    /* ── ENCABEZADO INSTITUCIONAL ────────────────────────── */
+    .institucion-bloque {
+      margin-bottom: 10pt;
+    }
+    .institucion-linea-1 {
+      font-size: 11pt;
+      font-weight: bold;
+      color: #000000;
+      text-transform: uppercase;
+    }
+    .institucion-linea-2 {
+      font-size: 11pt;
+      font-weight: bold;
+      color: #000000;
+      margin-top: 2pt;
+    }
+    .destinatario-bloque {
+      margin-top: 4pt;
+      margin-bottom: 4pt;
+      font-size: 11pt;
+      line-height: 1.35;
+    }
+    .destinatario-bloque p {
+      margin: 0;
+      line-height: 1.35;
+    }
+
+    /* ── TÍTULO DEL INFORME ──────────────────────────────── */
+    .titulo-informe-texto {
+      font-size: 11pt;
+      font-weight: bold;
+      color: #000000;
+      text-transform: uppercase;
+      margin-bottom: 10pt;
+    }
+
+    /* ── ASUNTO / DESTINATARIO ───────────────────────────── */
+    .asunto-bloque {
+      font-size: 11pt;
+      color: #000000;
+      margin-bottom: 12pt;
+      line-height: 1.4;
+    }
+
+    /* ── CUERPO DEL INFORME ──────────────────────────────── */
+    .cuerpo {
+      font-size: 11pt;
+      line-height: 1.45;
+      text-align: justify;
+      color: #000000;
+      margin-bottom: 12pt;
+    }
+
+    /* ── TABLAS DENTRO DEL CUERPO ────────────────────────── */
+    .tabla-cuerpo-pdf {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 8pt 0 10pt 0;
+    }
+    .tabla-cuerpo-pdf th {
+      border: 0.75pt solid #333333;
+      padding: 4pt 6pt;
+      background-color: #f1f5f9;
+      font-weight: bold;
+      font-size: 10pt;
+    }
+    .tabla-cuerpo-pdf td {
+      border: 0.75pt solid #333333;
+      padding: 4pt 6pt;
+      font-size: 9.5pt;
+      line-height: 1.35;
+    }
+
+    .cierre-adicional {
+      font-size: 11pt;
+      line-height: 1.45;
+      color: #000000;
+      margin-top: 10pt;
+      margin-bottom: 12pt;
+    }
+
+    /* ── FIRMAS DOBLES AL MISMO NIVEL ────────────────────── */
+    .firmas-tabla {
+      width: 100%;
+    }
+    .firma-columna {
+      width: 45%;
+      text-align: center;
+      vertical-align: top;
+    }
+    .firma-espaciador {
+      width: 10%;
+    }
+    .firma-caja {
+      width: 210pt;
+      margin: 0 auto;
+    }
+    .firma-linea-td {
+      border-top: 1px solid #000000;
+      padding-top: 6pt;
+      text-align: center;
+    }
+    .firma-nombre {
+      font-size: 11pt;
+      color: #000000;
+    }
+    .firma-cargo {
+      font-size: 10.5pt;
+      color: #000000;
+      margin-top: 3pt;
+    }
+
+    /* ── PIE DE PÁGINA ───────────────────────────────────── */
+    #pie {
+      font-size: 8pt;
+      color: #888888;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ENCABEZADO INSTITUCIONAL BANNER -->
+  <div style="text-align: right; margin-bottom: 14pt;">
+    <img src="{{ encabezado_uri }}" style="width: 260pt; height: 32.5pt;" />
+  </div>
+
+  <!-- LUGAR Y FECHA (Arriba a la derecha) -->
+  <div class="fecha-linea">
+    San Salvador de Jujuy, {{ doc.fecha.day }} de {{ doc.fecha|date:"F"|lower }} de {{ doc.fecha.year }}.
+  </div>
+
+  <!-- ENCABEZADO INSTITUCIONAL -->
+  <div class="institucion-bloque">
+    <div class="institucion-linea-1">SECRETARÍA DE NIÑEZ, ADOLESCENCIA Y FAMILIA</div>
+    {% if doc.destinatario or doc.cargo_display %}
+      <div class="destinatario-bloque">
+        {% if doc.cargo_display %}
+          <p><strong>{{ doc.cargo_display|upper|linebreaksbr }}</strong></p>
+        {% endif %}
+        {% if doc.nombre_display %}
+          <p><strong>{{ doc.nombre_display|upper }}</strong></p>
+        {% endif %}
+        {% if not doc.cargo_display and not doc.nombre_display and doc.destinatario %}
+          <p><strong>{{ doc.destinatario|upper|linebreaksbr }}</strong></p>
+        {% endif %}
+        <p style="margin-top: 2pt;"><u><strong>SU DESPACHO:</strong></u></p>
+      </div>
+    {% endif %}
+  </div>
+
+  <!-- TÍTULOS DEL INFORME (CENTRADOS) -->
+  <div style="text-align: center; margin-top: 10pt; margin-bottom: 12pt;">
+    <div class="institucion-linea-2" style="text-align: center;">Departamento de Informática</div>
+    <div class="titulo-informe-texto" style="text-align: center; margin-top: 3pt; margin-bottom: 0;">INFORME TÉCNICO</div>
+  </div>
+
+  <!-- ASUNTO -->
+  <div class="asunto-bloque">
+    <strong>Asunto:</strong> {{ doc.asunto }}
+  </div>
+
+  <!-- CONTENIDO -->
+  <div class="cuerpo">
+    {{ cuerpo_html }}
+  </div>
+
+  {% if "Sin otro particular" not in doc.cuerpo and "se eleva el presente informe" not in doc.cuerpo %}
+  <div class="cierre-adicional">
+    Sin otro particular, se eleva el presente informe para su conocimiento y los fines que correspondan.
+  </div>
+  {% endif %}
+
+  <!-- FIRMAS DOBLES AL MISMO NIVEL -->
+  <table class="firmas-tabla" cellpadding="0" cellspacing="0" style="margin-top: {{ firma_margin_top|default:25 }}pt;">
+    <tr>
+      <td class="firma-columna" align="center">
+        <table class="firma-caja" align="center" cellpadding="0" cellspacing="0">
+          <tr>
+            <td class="firma-linea-td" align="center">
+              <div class="firma-nombre">Alexander Magaña</div>
+              <div class="firma-cargo">Departamento Informática</div>
+            </td>
+          </tr>
+        </table>
+      </td>
+      <td class="firma-espaciador"></td>
+      <td class="firma-columna" align="center">
+        <table class="firma-caja" align="center" cellpadding="0" cellspacing="0">
+          <tr>
+            <td class="firma-linea-td" align="center">
+              <div class="firma-nombre">Darío Joaquín Orquera</div>
+              <div class="firma-cargo">Departamento Informática</div>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+
+  <!-- PIE DE PÁGINA (FRAME FIJO) -->
+  <div id="pie">
+    <table style="width: 100%; border-top: 1px solid #d1d5db; padding-top: 4pt;" cellpadding="0" cellspacing="0">
+      <tr>
+        <td style="font-size: 8pt; color: #888888;">Secretaría de Niñez, Adolescencia y Familia – Departamento de Informática</td>
+        <td style="font-size: 8pt; color: #888888; text-align: right;">{{ doc.numero }} — Pág. <pdf:pagenumber/>/<pdf:pagecount/></td>
+      </tr>
+    </table>
+  </div>
+
+</body>
+</html>

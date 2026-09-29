@@ -1,0 +1,522 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}{{ doc.numero }} – Docu Gestión Documental{% endblock %}
+
+{% block extra_head %}
+  <style>
+    .acta-field-row {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: baseline;
+      gap: 6px;
+      font-size: 12px;
+      font-weight: 700;
+      color: #000000;
+      margin-bottom: 8px;
+    }
+    .acta-dotted-fill {
+      border-bottom: 1px dotted #000;
+      display: inline-block;
+      vertical-align: baseline;
+      min-width: 60px;
+    }
+    .attachments-cards-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+      gap: 14px;
+    }
+    @media (max-width: 640px) {
+      .attachments-cards-grid {
+        grid-template-columns: 1fr !important;
+      }
+      .doc-action-bar {
+        display: flex !important;
+        flex-wrap: wrap !important;
+        gap: 6px !important;
+        width: 100% !important;
+      }
+      .doc-action-bar .btn,
+      .doc-action-bar form {
+        flex: 1 1 calc(50% - 6px) !important;
+        min-height: 38px !important;
+        font-size: 12px !important;
+        justify-content: center !important;
+      }
+      .doc-action-bar form button {
+        width: 100% !important;
+        min-height: 38px !important;
+      }
+      .sheet-firmas {
+        flex-direction: column !important;
+        gap: 28px !important;
+        margin-top: 36px !important;
+      }
+      .firma-caja {
+        width: 100% !important;
+        max-width: 240px !important;
+        margin: 0 auto !important;
+      }
+      .acta-half-sheet img {
+        width: 85% !important;
+        max-width: 300px !important;
+      }
+      .document-sheet {
+        padding: 16px 12px !important;
+        overflow-x: hidden !important;
+      }
+    }
+  </style>
+{% endblock %}
+
+{% block breadcrumbs %}
+  <span class="breadcrumb-separator">›</span>
+  <a href="{% url 'lista_documentos' %}">Documentos</a>
+  <span class="breadcrumb-separator">›</span>
+  <a href="{% url 'lista_documentos' %}?tipo={{ doc.tipo }}">
+    {% if doc.tipo == 'NOTA' %}Notas
+    {% elif doc.tipo == 'INFORME' %}Informes
+    {% else %}Actas de Entrega{% endif %}
+  </a>
+  <span class="breadcrumb-separator">›</span>
+  <span class="breadcrumb-current">{{ doc.numero }}</span>
+{% endblock %}
+
+{% block page_title %}
+  {% if doc.tipo == 'NOTA' %}Nota {{ doc.numero }}
+  {% elif doc.tipo == 'INFORME' %}Informe {{ doc.numero }}
+  {% else %}Acta de Entrega {{ doc.numero }}{% endif %}
+{% endblock %}
+
+{% block topbar_actions %}
+  <div class="doc-action-bar" style="margin-bottom: 0;">
+    {% if doc.estado == 'BORRADOR' %}
+      <form method="post" style="display:inline;">
+        {% csrf_token %}
+        <button type="submit" name="accion_aprobar" value="1" class="btn btn-success">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+          <span>Aprobar</span>
+        </button>
+      </form>
+    {% endif %}
+
+    <a href="{% url 'generar_pdf' doc.pk %}" target="_blank" class="btn btn-primary" title="Abrir y exportar PDF oficial">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+      <span>Exportar PDF</span>
+    </a>
+
+    <a href="{% url 'editar_documento' doc.pk %}" class="btn btn-outline">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg>
+      <span>Editar</span>
+    </a>
+
+    <button type="button" class="btn btn-outline" onclick="window.print()">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg>
+      <span>Imprimir</span>
+    </button>
+  </div>
+{% endblock %}
+
+{% block content %}
+
+<!-- Hoja de Documento Institucional (Figma Imagen 4) -->
+<div class="document-sheet">
+
+  {% if doc.tipo == 'NOTA' %}
+    <!-- ══════════════════════════════════════════════════════════ -->
+    <!--                  VISTA: NOTA TÉCNICA                       -->
+    <!-- ══════════════════════════════════════════════════════════ -->
+
+    <!-- Encabezado Institucional -->
+    <div class="sheet-encabezado-img-wrap" style="text-align: right; margin-bottom: 4px;">
+      <img src="{% static 'img/encabezado_institucional.png' %}" alt="Gobierno de Jujuy - Secretaría de Niñez, Adolescencia y Familia" style="width: 58%; max-width: 420px; height: auto; display: inline-block;">
+    </div>
+
+    <!-- Línea separadora horizontal -->
+    <div class="sheet-sep-line" style="border-bottom: 1.5px solid #888888; margin-bottom: 18px;"></div>
+
+    <!-- Fecha arriba a la derecha -->
+    <div class="sheet-fecha" style="text-align: right; font-size: 13.5px; color: #000000; margin-bottom: 18px;">
+      San Salvador de Jujuy, {{ doc.fecha.day }} de {{ doc.fecha|date:"F"|lower }} de {{ doc.fecha.year }}.
+    </div>
+
+    <!-- Destinatario a la izquierda -->
+    <div class="sheet-destinatario" style="margin-bottom: 18px; font-size: 13.5px; line-height: 1.45; color: #000000;">
+      {% if doc.cargo_display %}
+        <div style="font-weight: 700; text-transform: uppercase;">{{ doc.cargo_display|linebreaksbr }}</div>
+      {% endif %}
+      {% if doc.nombre_display %}
+        <div style="font-weight: 700; text-transform: uppercase; margin-top: 2px;">{{ doc.nombre_display }}</div>
+      {% endif %}
+      {% if not doc.cargo_display and not doc.nombre_display and doc.destinatario %}
+        <div style="font-weight: 700; text-transform: uppercase;">{{ doc.destinatario|linebreaksbr }}</div>
+      {% endif %}
+      <div style="margin-top: 4px;"><span style="text-decoration: underline; font-weight: 700;">SU DESPACHO:</span></div>
+    </div>
+
+    <!-- Asunto / Ref -->
+    {% if doc.asunto %}
+    <div class="sheet-asunto" style="margin-bottom: 16px; font-size: 13.5px; font-weight: 700; color: #000000;">
+      Ref.: {{ doc.asunto }}
+    </div>
+    {% endif %}
+
+    <!-- Contenido del Cuerpo -->
+    <div class="sheet-body-content" style="font-size: 13.5px; line-height: 1.65; color: #000000; text-align: justify; margin-bottom: 16px;">
+      {{ cuerpo_formateado }}
+    </div>
+
+    <!-- Párrafo de Cierre Oficial -->
+    {% if "sin otro particular" not in doc.cuerpo|lower and "en espera de una respuesta favorable" not in doc.cuerpo|lower %}
+    <div class="sheet-cierre" style="margin-top: 14px; margin-bottom: 18px; font-size: 13.5px; color: #000000; line-height: 1.5; text-align: justify;">
+      Sin otro particular y en espera de una respuesta favorable me despido de Ud. con atenta consideración y respeto.-
+    </div>
+    {% endif %}
+
+    <!-- Bloque de Firmas Dobles al Mismo Nivel -->
+    <div class="sheet-firmas" style="margin-top: 50px; display: flex; justify-content: space-between; gap: 40px; text-align: center; page-break-inside: avoid;">
+      <div class="firma-caja" style="flex: 1; max-width: 240px; margin: 0 auto;">
+        <div class="firma-linea" style="border-top: 1px solid #000000; padding-top: 8px;">
+          <div class="firma-nombre" style="font-size: 13px; color: #000000;">Alexander Magaña</div>
+          <div class="firma-cargo" style="font-size: 12px; color: #000000; margin-top: 2px;">Departamento Informática</div>
+        </div>
+      </div>
+      <div class="firma-caja" style="flex: 1; max-width: 240px; margin: 0 auto;">
+        <div class="firma-linea" style="border-top: 1px solid #000000; padding-top: 8px;">
+          <div class="firma-nombre" style="font-size: 13px; color: #000000;">Darío Joaquín Orquera</div>
+          <div class="firma-cargo" style="font-size: 12px; color: #000000; margin-top: 2px;">Departamento Informática</div>
+        </div>
+      </div>
+    </div>
+
+  {% elif doc.tipo == 'INFORME' %}
+    <!-- ══════════════════════════════════════════════════════════ -->
+    <!--                 VISTA: INFORME TÉCNICO (SNAF)              -->
+    <!-- ══════════════════════════════════════════════════════════ -->
+
+    <!-- Encabezado Institucional -->
+    <div class="sheet-encabezado-img-wrap" style="text-align: right; margin-bottom: 16px;">
+      <img src="{% static 'img/encabezado_institucional.png' %}" alt="Gobierno de Jujuy - Secretaría de Niñez, Adolescencia y Familia" style="width: 58%; max-width: 420px; height: auto; display: inline-block;">
+    </div>
+
+    <!-- Fecha arriba a la derecha -->
+    <div class="sheet-fecha" style="text-align: right; font-size: 13.5px; color: #000000; margin-bottom: 18px;">
+      San Salvador de Jujuy, {{ doc.fecha.day }} de {{ doc.fecha|date:"F"|lower }} de {{ doc.fecha.year }}.
+    </div>
+
+    <!-- Encabezado Institucional Izquierda -->
+    <div class="sheet-institucion" style="margin-bottom: 18px;">
+      <div style="font-size: 13.5px; font-weight: 700; color: #000000; text-transform: uppercase;">
+        SECRETARÍA DE NIÑEZ, ADOLESCENCIA Y FAMILIA
+      </div>
+      {% if doc.destinatario or doc.cargo_display %}
+        <div class="sheet-destinatario-linea" style="font-size: 13.5px; line-height: 1.45; color: #000000; margin-top: 6px; margin-bottom: 6px;">
+          {% if doc.cargo_display %}
+            <div style="font-weight: 700; text-transform: uppercase;">{{ doc.cargo_display|linebreaksbr }}</div>
+          {% endif %}
+          {% if doc.nombre_display %}
+            <div style="font-weight: 700; text-transform: uppercase; margin-top: 2px;">{{ doc.nombre_display }}</div>
+          {% endif %}
+          {% if not doc.cargo_display and not doc.nombre_display and doc.destinatario %}
+            <div style="font-weight: 700; text-transform: uppercase;">{{ doc.destinatario|linebreaksbr }}</div>
+          {% endif %}
+          <div style="margin-top: 4px;"><span style="text-decoration: underline; font-weight: 700;">SU DESPACHO:</span></div>
+        </div>
+      {% endif %}
+    </div>
+
+    <!-- Título del Documento Centrado -->
+    <div class="sheet-titulo-informe" style="margin-bottom: 18px; text-align: center;">
+      <div style="font-size: 13.5px; font-weight: 700; color: #000000;">
+        Departamento de Informática
+      </div>
+      <div style="font-size: 13.5px; font-weight: 700; color: #000000; text-transform: uppercase; margin-top: 3px;">
+        INFORME TÉCNICO
+      </div>
+    </div>
+
+    <!-- Asunto -->
+    <div class="sheet-asunto-bloque" style="margin-bottom: 20px; font-size: 13.5px; line-height: 1.5; color: #000000;">
+      <div><strong>Asunto:</strong> {{ doc.asunto }}</div>
+    </div>
+
+    <!-- Contenido del Informe -->
+    <div class="sheet-body-content" style="font-size: 13.5px; line-height: 1.65; color: #000000; text-align: justify; margin-bottom: 16px;">
+      {{ cuerpo_formateado }}
+    </div>
+
+    {% if "Sin otro particular" not in doc.cuerpo and "se eleva el presente informe" not in doc.cuerpo %}
+    <div class="sheet-cierre" style="margin-top: 14px; margin-bottom: 18px; font-size: 13.5px; color: #000000; line-height: 1.5;">
+      Sin otro particular, se eleva el presente informe para su conocimiento y los fines que correspondan.
+    </div>
+    {% endif %}
+
+    <!-- Bloque de Firmas Dobles al Mismo Nivel -->
+    <div class="sheet-firmas" style="margin-top: 50px; display: flex; justify-content: space-between; gap: 40px; text-align: center; page-break-inside: avoid;">
+      <div class="firma-caja" style="flex: 1; max-width: 240px; margin: 0 auto;">
+        <div class="firma-linea" style="border-top: 1px solid #000000; padding-top: 8px;">
+          <div class="firma-nombre" style="font-size: 13px; color: #000000;">Alexander Magaña</div>
+          <div class="firma-cargo" style="font-size: 12px; color: #000000; margin-top: 2px;">Departamento Informática</div>
+        </div>
+      </div>
+      <div class="firma-caja" style="flex: 1; max-width: 240px; margin: 0 auto;">
+        <div class="firma-linea" style="border-top: 1px solid #000000; padding-top: 8px;">
+          <div class="firma-nombre" style="font-size: 13px; color: #000000;">Darío Joaquín Orquera</div>
+          <div class="firma-cargo" style="font-size: 12px; color: #000000; margin-top: 2px;">Departamento Informática</div>
+        </div>
+      </div>
+    </div>
+
+  {% else %}
+    <!-- ══════════════════════════════════════════════════════════ -->
+    <!--                  VISTA: ACTA DE ENTREGA                    -->
+    <!--          (Formato Duplicado para corte en hoja A4)         -->
+    <!-- ══════════════════════════════════════════════════════════ -->
+
+    <!-- PARTE 1: ORIGINAL -->
+    <div class="acta-half-sheet">
+      <!-- Encabezado Institucional -->
+      <div style="text-align: right; margin-bottom: 10px;">
+        <img src="{% static 'img/encabezado_institucional.png' %}" alt="Gobierno de Jujuy - Secretaría de Niñez, Adolescencia y Familia" style="width: 56%; max-width: 390px; height: auto; display: inline-block;">
+      </div>
+
+      <div style="text-align: right; font-size: 13px; color: #000000; text-transform: uppercase; margin-bottom: 8px;">
+        SAN SALVADOR DE JUJUY, {{ doc.fecha.day }} de {{ doc.fecha|date:"F"|lower }} del {{ doc.fecha.year }}
+      </div>
+
+      <div style="text-align: center; font-size: 15px; font-weight: 800; letter-spacing: 1px; color: #000000; margin-bottom: 8px;">
+        ORIGINAL
+      </div>
+
+      {% if doc.destinatario %}
+        <div style="font-size: 12.5px; font-weight: 700; color: #000000; margin-bottom: 8px;">
+          DESTINO: <span style="font-weight: 600; text-transform: uppercase;">{{ doc.destinatario }}</span>
+        </div>
+      {% endif %}
+
+      <div style="font-size: 13px; color: #000000; margin-bottom: 12px; line-height: 1.4;">
+        {% if "FIRMA:" in doc.cuerpo or "AUTORIZA ENTREGA" in doc.cuerpo or "ORIGINAL" in doc.cuerpo or not doc.cuerpo %}
+          Recibí del Área de Informática los bienes que se detallan a continuación.-
+        {% else %}
+          {{ doc.cuerpo }}
+        {% endif %}
+      </div>
+
+      <!-- Tabla de Ítems del Acta (Unidad | Cantidad | Detalle) -->
+      <div style="width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; margin-bottom: 14px;">
+        <table style="width: 100%; border-collapse: collapse; margin-bottom: 0; border: 1px solid #000000; min-width: 320px;">
+          <thead>
+            <tr style="background-color: #fafafa;">
+              <th style="border: 1px solid #000000; padding: 5px 8px; width: 16%; text-align: center; font-size: 12.5px; font-weight: 700; color: #000000;">Unidad</th>
+              <th style="border: 1px solid #000000; padding: 5px 8px; width: 14%; text-align: center; font-size: 12.5px; font-weight: 700; color: #000000;">Cantidad</th>
+              <th style="border: 1px solid #000000; padding: 5px 8px; width: 70%; text-align: left; font-size: 12.5px; font-weight: 700; color: #000000;">Detalle</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% if items %}
+              {% for item in items %}
+                <tr>
+                  <td style="border: 1px solid #000000; padding: 5px 8px; text-align: center; font-size: 12px; color: #000000;">Unidad</td>
+                  <td style="border: 1px solid #000000; padding: 5px 8px; text-align: center; font-size: 12px; font-weight: 600; color: #000000;">{{ item.cantidad|stringformat:"02d" }}</td>
+                  <td style="border: 1px solid #000000; padding: 5px 8px; text-align: left; font-size: 12px; color: #000000;">
+                    <strong>{{ item.descripcion }}</strong>{% if item.numero_serie %} — Nro serie: {{ item.numero_serie }}{% endif %}{% if item.codigo_inventario %} — Cód: {{ item.codigo_inventario }}{% endif %}{% if item.observaciones %} ({{ item.observaciones }}){% endif %}
+                  </td>
+                </tr>
+              {% endfor %}
+            {% else %}
+              <tr>
+                <td style="border: 1px solid #000000; padding: 5px 8px; text-align: center; font-size: 12px; color: #000000;">Unidad</td>
+                <td style="border: 1px solid #000000; padding: 5px 8px; text-align: center; font-size: 12px; font-weight: 600; color: #000000;">01</td>
+                <td style="border: 1px solid #000000; padding: 5px 8px; text-align: left; font-size: 12px; color: #000000;">{{ doc.asunto }}</td>
+              </tr>
+            {% endif %}
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Recibe Conforme -->
+      <div style="margin-bottom: 28px; margin-top: 10px;">
+        <span style="border: 1px solid #000000; padding: 3px 10px; font-weight: 700; font-size: 12.5px; display: inline-block; color: #000000;">
+          RECIBE CONFORME:
+        </span>
+      </div>
+      <div style="font-size: 12px; font-weight: 700; color: #000000; margin-bottom: 6px; letter-spacing: 0.5px; overflow: hidden; white-space: nowrap; text-overflow: clip; max-width: 100%;">
+        FIRMA:................................
+      </div>
+      <div style="font-size: 12px; font-weight: 700; color: #000000; margin-bottom: 6px; letter-spacing: 0.5px; overflow: hidden; white-space: nowrap; text-overflow: clip; max-width: 100%;">
+        {% if doc.receptor_nombre or doc.receptor_dni %}
+          ACLARACION: <span style="font-weight: 600; text-transform: uppercase;">{{ doc.receptor_nombre|default:"..........................................................." }}</span> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; DNI: <span style="font-weight: 600;">{{ doc.receptor_dni|default:"..................................." }}</span>
+        {% else %}
+          ACLARACION:...........................................................DNI...................................
+        {% endif %}
+      </div>
+      <div style="font-size: 12px; font-weight: 700; color: #000000; margin-bottom: 24px; letter-spacing: 0.5px; overflow: hidden; white-space: nowrap; text-overflow: clip; max-width: 100%;">
+        {% if doc.destinatario %}
+          DEPENDENCIA / SECTOR: <span style="font-weight: 600; text-transform: uppercase;">{{ doc.destinatario }}</span>
+        {% else %}
+          DEPENDENCIA / SECTOR: ........................................................................................
+        {% endif %}
+      </div>
+
+      <!-- Autoriza Entrega -->
+      <div style="border: 1px solid #000000; padding: 5px 10px; font-weight: 700; font-size: 12.5px; color: #000000; margin-bottom: 38px; display: inline-block;">
+        AUTORIZA ENTREGA: {{ doc.remitente|default:"Darío Joaquín Orquera" }}
+      </div>
+      <div style="font-size: 12px; font-weight: 700; color: #000000; letter-spacing: 0.5px; margin-bottom: 10px; overflow: hidden; white-space: nowrap; text-overflow: clip; max-width: 100%;">
+        FIRMA:................................
+      </div>
+    </div>
+
+    <!-- LÍNEA DE CORTE -->
+    <div style="margin: 28px 0; position: relative; text-align: center;">
+      <div style="border-top: 1px dashed #777777; width: 100%;"></div>
+      <div style="position: absolute; top: -10px; left: 50%; transform: translateX(-50%); background: #ffffff; padding: 0 10px; font-size: 11px; color: #666666; font-weight: 600; max-width: 90%;">
+        ✂ Cortar por la línea de puntos (Original / Duplicado)
+      </div>
+    </div>
+
+    <!-- PARTE 2: DUPLICADO -->
+    <div class="acta-half-sheet" style="max-width: 100%; overflow-x: hidden;">
+      <!-- Encabezado Institucional -->
+      <div style="text-align: right; margin-bottom: 10px;">
+        <img src="{% static 'img/encabezado_institucional.png' %}" alt="Gobierno de Jujuy - Secretaría de Niñez, Adolescencia y Familia" style="width: 56%; max-width: 390px; height: auto; display: inline-block;">
+      </div>
+
+      <div style="text-align: right; font-size: 13px; color: #000000; text-transform: uppercase; margin-bottom: 8px;">
+        SAN SALVADOR DE JUJUY, {{ doc.fecha.day }} de {{ doc.fecha|date:"F"|lower }} del {{ doc.fecha.year }}
+      </div>
+
+      <div style="text-align: center; font-size: 15px; font-weight: 800; letter-spacing: 1px; color: #000000; margin-bottom: 8px;">
+        DUPLICADO
+      </div>
+
+      {% if doc.destinatario %}
+        <div style="font-size: 12.5px; font-weight: 700; color: #000000; margin-bottom: 8px;">
+          DESTINO: <span style="font-weight: 600; text-transform: uppercase;">{{ doc.destinatario }}</span>
+        </div>
+      {% endif %}
+
+      <div style="font-size: 13px; color: #000000; margin-bottom: 12px; line-height: 1.4;">
+        {% if "FIRMA:" in doc.cuerpo or "AUTORIZA ENTREGA" in doc.cuerpo or "ORIGINAL" in doc.cuerpo or not doc.cuerpo %}
+          Recibí del Área de Informática los bienes que se detallan a continuación.-
+        {% else %}
+          {{ doc.cuerpo }}
+        {% endif %}
+      </div>
+
+      <!-- Tabla de Ítems del Acta (Unidad | Cantidad | Detalle) -->
+      <div style="width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; margin-bottom: 14px;">
+        <table style="width: 100%; border-collapse: collapse; margin-bottom: 0; border: 1px solid #000000; min-width: 320px;">
+          <thead>
+            <tr style="background-color: #fafafa;">
+              <th style="border: 1px solid #000000; padding: 5px 8px; width: 16%; text-align: center; font-size: 12.5px; font-weight: 700; color: #000000;">Unidad</th>
+              <th style="border: 1px solid #000000; padding: 5px 8px; width: 14%; text-align: center; font-size: 12.5px; font-weight: 700; color: #000000;">Cantidad</th>
+              <th style="border: 1px solid #000000; padding: 5px 8px; width: 70%; text-align: left; font-size: 12.5px; font-weight: 700; color: #000000;">Detalle</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% if items %}
+              {% for item in items %}
+                <tr>
+                  <td style="border: 1px solid #000000; padding: 5px 8px; text-align: center; font-size: 12px; color: #000000;">Unidad</td>
+                  <td style="border: 1px solid #000000; padding: 5px 8px; text-align: center; font-size: 12px; font-weight: 600; color: #000000;">{{ item.cantidad|stringformat:"02d" }}</td>
+                  <td style="border: 1px solid #000000; padding: 5px 8px; text-align: left; font-size: 12px; color: #000000;">
+                    <strong>{{ item.descripcion }}</strong>{% if item.numero_serie %} — Nro serie: {{ item.numero_serie }}{% endif %}{% if item.codigo_inventario %} — Cód: {{ item.codigo_inventario }}{% endif %}{% if item.observaciones %} ({{ item.observaciones }}){% endif %}
+                  </td>
+                </tr>
+              {% endfor %}
+            {% else %}
+              <tr>
+                <td style="border: 1px solid #000000; padding: 5px 8px; text-align: center; font-size: 12px; color: #000000;">Unidad</td>
+                <td style="border: 1px solid #000000; padding: 5px 8px; text-align: center; font-size: 12px; font-weight: 600; color: #000000;">01</td>
+                <td style="border: 1px solid #000000; padding: 5px 8px; text-align: left; font-size: 12px; color: #000000;">{{ doc.asunto }}</td>
+              </tr>
+            {% endif %}
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Recibe Conforme -->
+      <div style="margin-bottom: 28px; margin-top: 10px;">
+        <span style="border: 1px solid #000000; padding: 3px 10px; font-weight: 700; font-size: 12.5px; display: inline-block; color: #000000;">
+          RECIBE CONFORME:
+        </span>
+      </div>
+      <div style="font-size: 12px; font-weight: 700; color: #000000; margin-bottom: 6px; letter-spacing: 0.5px; overflow: hidden; white-space: nowrap; text-overflow: clip; max-width: 100%;">
+        FIRMA:................................
+      </div>
+      <div style="font-size: 12px; font-weight: 700; color: #000000; margin-bottom: 6px; letter-spacing: 0.5px; overflow: hidden; white-space: nowrap; text-overflow: clip; max-width: 100%;">
+        {% if doc.receptor_nombre or doc.receptor_dni %}
+          ACLARACION: <span style="font-weight: 600; text-transform: uppercase;">{{ doc.receptor_nombre|default:"..........................................................." }}</span> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; DNI: <span style="font-weight: 600;">{{ doc.receptor_dni|default:"..................................." }}</span>
+        {% else %}
+          ACLARACION:...........................................................DNI...................................
+        {% endif %}
+      </div>
+      <div style="font-size: 12px; font-weight: 700; color: #000000; margin-bottom: 24px; letter-spacing: 0.5px; overflow: hidden; white-space: nowrap; text-overflow: clip; max-width: 100%;">
+        {% if doc.destinatario %}
+          DEPENDENCIA / SECTOR: <span style="font-weight: 600; text-transform: uppercase;">{{ doc.destinatario }}</span>
+        {% else %}
+          DEPENDENCIA / SECTOR: ........................................................................................
+        {% endif %}
+      </div>
+
+      <!-- Autoriza Entrega -->
+      <div style="border: 1px solid #000000; padding: 5px 10px; font-weight: 700; font-size: 12.5px; color: #000000; margin-bottom: 38px; display: inline-block;">
+        AUTORIZA ENTREGA: {{ doc.remitente|default:"Darío Joaquín Orquera" }}
+      </div>
+      <div style="font-size: 12px; font-weight: 700; color: #000000; letter-spacing: 0.5px; margin-bottom: 10px; overflow: hidden; white-space: nowrap; text-overflow: clip; max-width: 100%;">
+        FIRMA:................................
+      </div>
+    </div>
+  {% endif %}
+
+</div>
+
+<!-- Sección de Archivos Adjuntos (Visible en Pantalla, Oculta en Impresión) -->
+{% if adjuntos %}
+<div class="ui-card no-print" style="margin-top: 24px; padding: 20px 24px; background: white; border-radius: var(--radius-lg); border: 1px solid var(--border-color); box-shadow: var(--shadow-sm);">
+  <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px;">
+    <div style="display: flex; align-items: center; gap: 10px;">
+      <div style="width: 34px; height: 34px; border-radius: var(--radius-sm); background: #eff6ff; color: #2563eb; display: flex; align-items: center; justify-content: center;">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"></path>
+        </svg>
+      </div>
+      <div>
+        <h4 style="margin: 0; font-size: 15px; font-weight: 700; color: var(--text-color);">Archivos Adjuntos y Documentación Respaldatoria</h4>
+        <p style="margin: 2px 0 0 0; font-size: 12px; color: var(--text-muted);">{{ adjuntos.count }} archivo{{ adjuntos.count|pluralize:"s" }} adjunto{{ adjuntos.count|pluralize:"s" }} a este documento</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="attachments-cards-grid">
+    {% for adj in adjuntos %}
+      <div style="display: flex; align-items: center; justify-content: space-between; padding: 12px 14px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: var(--radius-md); transition: all 0.2s ease;">
+        <div style="display: flex; align-items: center; gap: 12px; overflow: hidden;">
+          <div style="width: 36px; height: 36px; border-radius: 6px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; {% if adj.es_imagen %}background:#eff6ff;color:#2563eb;{% elif adj.es_pdf %}background:#fee2e2;color:#dc2626;{% else %}background:#f1f5f9;color:#475569;{% endif %}">
+            {% if adj.es_imagen %}
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>
+            {% elif adj.es_pdf %}
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline></svg>
+            {% else %}
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline></svg>
+            {% endif %}
+          </div>
+          <div style="overflow: hidden;">
+            <div style="font-size: 13px; font-weight: 600; color: var(--text-color); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="{{ adj.nombre_original }}">{{ adj.nombre_original }}</div>
+            <div style="font-size: 11.5px; color: var(--text-muted); margin-top: 2px;">{{ adj.tamano_formateado }} &bull; {{ adj.creado_en|date:"d/m/Y H:i" }}</div>
+          </div>
+        </div>
+        <a href="{{ adj.archivo.url }}" target="_blank" download class="btn btn-outline btn-sm" style="padding: 6px 10px; font-size: 12px; white-space: nowrap; margin-left: 8px;" title="Descargar archivo">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+            <polyline points="7 10 12 15 17 10"></polyline>
+            <line x1="12" y1="15" x2="12" y2="3"></line>
+          </svg>
+        </a>
+      </div>
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
+
+{% endblock %}

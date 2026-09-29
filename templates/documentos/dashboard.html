@@ -1,0 +1,203 @@
+{% extends 'base.html' %}
+{% block title %}Resumen General – Docu Gestión Documental{% endblock %}
+
+{% block breadcrumbs %}
+  <span class="breadcrumb-separator">›</span>
+  <span class="breadcrumb-current">Dashboard</span>
+{% endblock %}
+
+{% block page_title %}Resumen General{% endblock %}
+
+{% block content %}
+
+<!-- Hero Banner Docu -->
+<section class="hero-banner">
+  <div class="hero-banner-content">
+    <h2>¡Bienvenido al Panel de Docu!</h2>
+    <p>Sistema centralizado para la gestión, emisión y firma digital de notas técnicas, informes periódicos y actas de entrega de equipamiento tecnológico.</p>
+  </div>
+  <a href="{% url 'crear_documento' %}" class="btn btn-primary" style="padding: 11px 22px; font-size: 13.5px;">
+    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+      <polyline points="14 2 14 8 20 8"></polyline>
+      <line x1="12" y1="18" x2="12" y2="12"></line>
+      <line x1="9" y1="15" x2="15" y2="15"></line>
+    </svg>
+    <span>Redactar Documento</span>
+  </a>
+</section>
+
+<!-- Fila de 3 Tarjetas Métricas Grandes -->
+<div class="metrics-row">
+  <!-- Card 1: Notas -->
+  <div class="metric-card">
+    <div class="metric-card-top">
+      <span class="metric-label">Notas</span>
+      <div class="metric-icon-box blue">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+          <polyline points="14 2 14 8 20 8"></polyline>
+          <line x1="16" y1="13" x2="8" y2="13"></line>
+          <line x1="16" y1="17" x2="8" y2="17"></line>
+          <polyline points="10 9 9 9 8 9"></polyline>
+        </svg>
+      </div>
+    </div>
+    <div class="metric-value">{{ por_tipo.NOTA }}</div>
+    <div class="metric-subtitle">Notas de coordinación técnica</div>
+  </div>
+
+  <!-- Card 2: Informes -->
+  <div class="metric-card">
+    <div class="metric-card-top">
+      <span class="metric-label">Informes</span>
+      <div class="metric-icon-box green">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <ellipse cx="12" cy="5" rx="9" ry="3"></ellipse>
+          <path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"></path>
+          <path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"></path>
+        </svg>
+      </div>
+    </div>
+    <div class="metric-value">{{ por_tipo.INFORME }}</div>
+    <div class="metric-subtitle">Monitoreo y mantenimientos</div>
+  </div>
+
+  <!-- Card 3: Actas de Entrega -->
+  <div class="metric-card">
+    <div class="metric-card-top">
+      <span class="metric-label">Actas de Entrega</span>
+      <div class="metric-icon-box orange">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
+          <line x1="2" y1="20" x2="22" y2="20"></line>
+        </svg>
+      </div>
+    </div>
+    <div class="metric-value">{{ por_tipo.ACTA }}</div>
+    <div class="metric-subtitle">Hardware y activos TI asignados</div>
+  </div>
+</div>
+
+<!-- Layout a 2 Columnas: Documentos Recientes + Accesos Rápidos -->
+<div class="dashboard-grid">
+  <!-- Columna Izquierda: Documentos Recientes -->
+  <div class="ui-card">
+    <div class="ui-card-header">
+      <div>
+        <div class="ui-card-title">Documentos Recientes</div>
+        <div class="ui-card-subtitle">Últimos documentos creados y modificados en el sistema</div>
+      </div>
+      <a href="{% url 'lista_documentos' %}" style="color: var(--primary); font-size: 13px; font-weight: 600; display: inline-flex; align-items: center; gap: 4px;">
+        Ver todos
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="9 18 15 12 9 6"></polyline>
+        </svg>
+      </a>
+    </div>
+
+    {% if recientes %}
+      <div class="recent-docs-list">
+        {% for doc in recientes %}
+          <a href="{% url 'detalle_documento' doc.pk %}" class="recent-doc-row">
+            <div class="recent-doc-top">
+              <div class="recent-doc-meta">
+                <span class="recent-doc-num">{{ doc.numero }}</span>
+                <span class="recent-doc-dot">•</span>
+                <span class="recent-doc-type">{{ doc.get_tipo_display }}</span>
+              </div>
+              <span class="badge badge-{{ doc.estado|lower }}">{{ doc.get_estado_display }}</span>
+            </div>
+            <div class="recent-doc-title">{{ doc.asunto }}</div>
+            <div class="recent-doc-bottom">
+              <span>Destinatario: {{ doc.destinatario|default:"No especificado"|truncatechars:45 }}</span>
+              <span style="color: #cbd5e1;">|</span>
+              <span>{{ doc.fecha|date:"d M Y" }}</span>
+            </div>
+          </a>
+        {% endfor %}
+      </div>
+    {% else %}
+      <div style="text-align: center; padding: 40px 20px; color: var(--text-muted);">
+        <p style="font-size: 14px; margin-bottom: 14px;">No hay documentos registrados aún.</p>
+        <a href="{% url 'crear_documento' %}" class="btn btn-primary btn-sm">Crear el primer documento</a>
+      </div>
+    {% endif %}
+  </div>
+
+  <!-- Columna Derecha: Accesos Rápidos -->
+  <div class="ui-card">
+    <div class="ui-card-header" style="margin-bottom: 14px;">
+      <div>
+        <div class="ui-card-title">Accesos Rápidos</div>
+        <div class="ui-card-subtitle">Generación acelerada de actas e informes comunes</div>
+      </div>
+    </div>
+
+      <!-- 1. Solicitud de Insumos y Hardware (SNAF) -->
+      <a href="{% url 'crear_documento' %}?plantilla=insumos" class="quick-access-item">
+        <div class="quick-access-icon purple" style="background: #f3e8ff; color: #7e22ce;">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+            <polyline points="14 2 14 8 20 8"></polyline>
+            <line x1="16" y1="13" x2="8" y2="13"></line>
+            <line x1="16" y1="17" x2="8" y2="17"></line>
+          </svg>
+        </div>
+        <div class="quick-access-text">
+          <div class="quick-access-title">Solicitud de Insumos TI</div>
+          <div class="quick-access-desc">Nota de pedido oficial (Dra. Marta Iriarte)</div>
+        </div>
+        <div class="quick-access-plus">+</div>
+      </a>
+
+      <!-- 2. Acta de Asignación de Laptop -->
+      <a href="{% url 'crear_documento' %}?plantilla=laptop" class="quick-access-item">
+        <div class="quick-access-icon blue">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
+            <line x1="2" y1="20" x2="22" y2="20"></line>
+          </svg>
+        </div>
+        <div class="quick-access-text">
+          <div class="quick-access-title">Acta de Asignación de Laptop</div>
+          <div class="quick-access-desc">Entrega de equipo a personal nuevo</div>
+        </div>
+        <div class="quick-access-plus">+</div>
+      </a>
+
+      <!-- 3. Mantenimiento Preventivo -->
+      <a href="{% url 'crear_documento' %}?plantilla=mantenimiento" class="quick-access-item">
+        <div class="quick-access-icon green">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+            <polyline points="22 4 12 14.01 9 11.01"></polyline>
+          </svg>
+        </div>
+        <div class="quick-access-text">
+          <div class="quick-access-title">Mantenimiento Preventivo</div>
+          <div class="quick-access-desc">Informe periódico de servidores</div>
+        </div>
+        <div class="quick-access-plus">+</div>
+      </a>
+
+      <!-- 4. Reporte de Incidente Crítico -->
+      <a href="{% url 'crear_documento' %}?plantilla=incidente" class="quick-access-item">
+        <div class="quick-access-icon orange">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
+            <line x1="12" y1="9" x2="12" y2="13"></line>
+            <line x1="12" y1="17" x2="12.01" y2="17"></line>
+          </svg>
+        </div>
+        <div class="quick-access-text">
+          <div class="quick-access-title">Reporte de Incidente Crítico</div>
+          <div class="quick-access-desc">Caídas, fallas severas o problemas de red</div>
+        </div>
+        <div class="quick-access-plus">+</div>
+      </a>
+    </div>
+  </div>
+</div>
+
+{% endblock %}

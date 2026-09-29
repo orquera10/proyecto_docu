@@ -1,0 +1,288 @@
+{% extends 'base.html' %}
+{% block title %}Repositorio de Documentos – Docu Gestión Documental{% endblock %}
+
+{% block breadcrumbs %}
+  <span class="breadcrumb-separator">›</span>
+  <span class="breadcrumb-current">Documentos</span>
+{% endblock %}
+
+{% block page_title %}Repositorio de Documentos{% endblock %}
+
+{% block content %}
+
+<!-- Tarjeta de Filtros Avanzados (Figma Imagen 1) -->
+<!-- Tarjeta de Filtros Avanzados (Compacto y Desplegable) -->
+<div class="ui-card filters-card {% if filtros_activos_count %}is-expanded{% endif %}" id="filters-container">
+  <div class="filters-header" onclick="toggleFiltrosAvanzados()">
+    <div class="filters-title-left">
+      <div style="display: flex; align-items: center; gap: 8px;">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="4" y1="21" x2="4" y2="14"></line>
+          <line x1="4" y1="10" x2="4" y2="3"></line>
+          <line x1="12" y1="21" x2="12" y2="12"></line>
+          <line x1="12" y1="8" x2="12" y2="3"></line>
+          <line x1="20" y1="21" x2="20" y2="16"></line>
+          <line x1="20" y1="12" x2="20" y2="3"></line>
+          <line x1="1" y1="14" x2="7" y2="14"></line>
+          <line x1="9" y1="8" x2="15" y2="8"></line>
+          <line x1="17" y1="16" x2="23" y2="16"></line>
+        </svg>
+        <span>Filtros Avanzados</span>
+      </div>
+
+      {% if filtros_activos_count %}
+        <span class="badge-active-filters">{{ filtros_activos_count }} activo{{ filtros_activos_count|pluralize }}</span>
+      {% endif %}
+
+      <!-- Resumen de filtros aplicados visible cuando está colapsado -->
+      <div class="filters-active-pills" id="pills-resumen-filtros">
+        {% if tipo_filtro %}
+          <span class="filter-pill-tag">Tipo: {{ tipo_filtro }}</span>
+        {% endif %}
+        {% if estado_filtro %}
+          <span class="filter-pill-tag">Estado: {{ estado_filtro }}</span>
+        {% endif %}
+        {% if periodo_filtro %}
+          <span class="filter-pill-tag">Período: {{ periodo_filtro }}</span>
+        {% endif %}
+        {% if orden != 'fecha' or dir != 'desc' %}
+          <span class="filter-pill-tag">Orden: {{ orden }} ({{ dir }})</span>
+        {% endif %}
+      </div>
+    </div>
+
+    <div class="filters-header-right">
+      {% if busqueda or tipo_filtro or estado_filtro or anio_filtro or periodo_filtro or orden != 'fecha' or dir != 'desc' %}
+        <a href="{% url 'lista_documentos' %}" class="btn-clear-filters" onclick="event.stopPropagation();" title="Quitar todos los filtros aplicados">Limpiar Filtros</a>
+      {% endif %}
+      <button type="button" class="btn-toggle-filters" id="btn-toggle-filtros" title="Alternar filtros">
+        <span id="label-toggle-filtros">{% if filtros_activos_count %}Ocultar filtros{% else %}Desplegar filtros{% endif %}</span>
+        <svg class="filters-chevron-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="6 9 12 15 18 9"></polyline>
+        </svg>
+      </button>
+    </div>
+  </div>
+
+  <div class="filters-collapse-content" id="filters-content">
+    <form method="get" class="filters-form-grid" id="filters-form">
+      <!-- Preservar búsqueda si existe -->
+      {% if busqueda %}
+        <input type="hidden" name="q" value="{{ busqueda }}">
+      {% endif %}
+
+      <!-- 1. Tipo de Documento -->
+      <div class="filter-field">
+        <label class="filter-label" for="filter-tipo">Tipo de Documento</label>
+        <select name="tipo" id="filter-tipo" class="filter-select-input" onchange="this.form.submit()">
+          <option value="">Todos los tipos</option>
+          <option value="NOTA" {% if tipo_filtro == 'NOTA' %}selected{% endif %}>Notas</option>
+          <option value="INFORME" {% if tipo_filtro == 'INFORME' %}selected{% endif %}>Informes</option>
+          <option value="ACTA" {% if tipo_filtro == 'ACTA' %}selected{% endif %}>Actas de Entrega</option>
+        </select>
+      </div>
+
+      <!-- 2. Estado de Firma -->
+      <div class="filter-field">
+        <label class="filter-label" for="filter-estado">Estado de Firma</label>
+        <select name="estado" id="filter-estado" class="filter-select-input" onchange="this.form.submit()">
+          <option value="">Todos los estados</option>
+          <option value="BORRADOR" {% if estado_filtro == 'BORRADOR' %}selected{% endif %}>Borrador</option>
+          <option value="EMITIDO" {% if estado_filtro == 'EMITIDO' %}selected{% endif %}>Firmado / Emitido</option>
+        </select>
+      </div>
+
+      <!-- 3. Fecha de Creación -->
+      <div class="filter-field">
+        <label class="filter-label" for="filter-periodo">Período</label>
+        <select name="periodo" id="filter-periodo" class="filter-select-input" onchange="this.form.submit()">
+          <option value="">Todos los períodos</option>
+          <option value="mes" {% if periodo_filtro == 'mes' %}selected{% endif %}>Este mes</option>
+          <option value="semana" {% if periodo_filtro == 'semana' %}selected{% endif %}>Últimos 7 días</option>
+          <option value="hoy" {% if periodo_filtro == 'hoy' %}selected{% endif %}>Hoy</option>
+          <option value="anio" {% if periodo_filtro == 'anio' %}selected{% endif %}>Este año</option>
+        </select>
+      </div>
+
+      <!-- 4. Ordenar por Columna -->
+      <div class="filter-field">
+        <label class="filter-label" for="filter-orden">Ordenar por</label>
+        <select name="orden" id="filter-orden" class="filter-select-input" onchange="this.form.submit()">
+          <option value="fecha" {% if orden == 'fecha' %}selected{% endif %}>Fecha</option>
+          <option value="numero" {% if orden == 'numero' %}selected{% endif %}>Número</option>
+          <option value="tipo" {% if orden == 'tipo' %}selected{% endif %}>Tipo de Doc.</option>
+          <option value="destinatario" {% if orden == 'destinatario' %}selected{% endif %}>Destinatario</option>
+          <option value="asunto" {% if orden == 'asunto' %}selected{% endif %}>Asunto / Resumen</option>
+          <option value="estado" {% if orden == 'estado' %}selected{% endif %}>Estado</option>
+        </select>
+      </div>
+
+      <!-- 5. Sentido del orden -->
+      <div class="filter-field">
+        <label class="filter-label" for="filter-dir">Sentido</label>
+        <select name="dir" id="filter-dir" class="filter-select-input" onchange="this.form.submit()">
+          <option value="desc" {% if dir == 'desc' %}selected{% endif %}>Mayor a menor (Desc)</option>
+          <option value="asc" {% if dir == 'asc' %}selected{% endif %}>Menor a mayor (Asc)</option>
+        </select>
+      </div>
+
+      <div>
+        <button type="submit" class="btn btn-outline" style="height: 36px; padding: 0 14px; font-size: 12.5px; display: inline-flex; align-items: center; gap: 6px;">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="11" cy="11" r="8"></circle>
+            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+          </svg>
+          <span>Aplicar</span>
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Tabla de Documentos -->
+<div class="table-card">
+  {% if documentos %}
+    <div class="table-responsive">
+      <table class="sysdoc-table">
+        <thead>
+          <tr>
+            <th class="sortable {% if orden == 'numero' %}sorted-active{% endif %}">
+              <a href="?orden=numero&dir={% if orden == 'numero' and dir == 'desc' %}asc{% else %}desc{% endif %}{% if tipo_filtro %}&tipo={{ tipo_filtro }}{% endif %}{% if estado_filtro %}&estado={{ estado_filtro }}{% endif %}{% if periodo_filtro %}&periodo={{ periodo_filtro }}{% endif %}{% if anio_filtro %}&anio={{ anio_filtro }}{% endif %}{% if busqueda %}&q={{ busqueda }}{% endif %}" class="sort-link" title="Ordenar por Número ({% if orden == 'numero' and dir == 'desc' %}actualmente: mayor a menor, click para invertir{% else %}click para ordenar de mayor a menor{% endif %})">
+                <span>Número</span>
+                <span class="sort-icon">{% if orden == 'numero' %}{% if dir == 'desc' %}▼{% else %}▲{% endif %}{% else %}⇅{% endif %}</span>
+              </a>
+            </th>
+            <th class="sortable {% if orden == 'tipo' %}sorted-active{% endif %}">
+              <a href="?orden=tipo&dir={% if orden == 'tipo' and dir == 'desc' %}asc{% else %}desc{% endif %}{% if tipo_filtro %}&tipo={{ tipo_filtro }}{% endif %}{% if estado_filtro %}&estado={{ estado_filtro }}{% endif %}{% if periodo_filtro %}&periodo={{ periodo_filtro }}{% endif %}{% if anio_filtro %}&anio={{ anio_filtro }}{% endif %}{% if busqueda %}&q={{ busqueda }}{% endif %}" class="sort-link" title="Ordenar por Tipo de Doc.">
+                <span>Tipo de Doc.</span>
+                <span class="sort-icon">{% if orden == 'tipo' %}{% if dir == 'desc' %}▼{% else %}▲{% endif %}{% else %}⇅{% endif %}</span>
+              </a>
+            </th>
+            <th class="sortable {% if orden == 'fecha' %}sorted-active{% endif %}">
+              <a href="?orden=fecha&dir={% if orden == 'fecha' and dir == 'desc' %}asc{% else %}desc{% endif %}{% if tipo_filtro %}&tipo={{ tipo_filtro }}{% endif %}{% if estado_filtro %}&estado={{ estado_filtro }}{% endif %}{% if periodo_filtro %}&periodo={{ periodo_filtro }}{% endif %}{% if anio_filtro %}&anio={{ anio_filtro }}{% endif %}{% if busqueda %}&q={{ busqueda }}{% endif %}" class="sort-link" title="Ordenar por Fecha">
+                <span>Fecha</span>
+                <span class="sort-icon">{% if orden == 'fecha' %}{% if dir == 'desc' %}▼{% else %}▲{% endif %}{% else %}⇅{% endif %}</span>
+              </a>
+            </th>
+            <th class="sortable {% if orden == 'destinatario' %}sorted-active{% endif %}">
+              <a href="?orden=destinatario&dir={% if orden == 'destinatario' and dir == 'desc' %}asc{% else %}desc{% endif %}{% if tipo_filtro %}&tipo={{ tipo_filtro }}{% endif %}{% if estado_filtro %}&estado={{ estado_filtro }}{% endif %}{% if periodo_filtro %}&periodo={{ periodo_filtro }}{% endif %}{% if anio_filtro %}&anio={{ anio_filtro }}{% endif %}{% if busqueda %}&q={{ busqueda }}{% endif %}" class="sort-link" title="Ordenar por Destinatario">
+                <span>Destinatario</span>
+                <span class="sort-icon">{% if orden == 'destinatario' %}{% if dir == 'desc' %}▼{% else %}▲{% endif %}{% else %}⇅{% endif %}</span>
+              </a>
+            </th>
+            <th class="sortable {% if orden == 'asunto' %}sorted-active{% endif %}">
+              <a href="?orden=asunto&dir={% if orden == 'asunto' and dir == 'desc' %}asc{% else %}desc{% endif %}{% if tipo_filtro %}&tipo={{ tipo_filtro }}{% endif %}{% if estado_filtro %}&estado={{ estado_filtro }}{% endif %}{% if periodo_filtro %}&periodo={{ periodo_filtro }}{% endif %}{% if anio_filtro %}&anio={{ anio_filtro }}{% endif %}{% if busqueda %}&q={{ busqueda }}{% endif %}" class="sort-link" title="Ordenar por Asunto / Resumen">
+                <span>Asunto / Resumen</span>
+                <span class="sort-icon">{% if orden == 'asunto' %}{% if dir == 'desc' %}▼{% else %}▲{% endif %}{% else %}⇅{% endif %}</span>
+              </a>
+            </th>
+            <th class="sortable {% if orden == 'estado' %}sorted-active{% endif %}">
+              <a href="?orden=estado&dir={% if orden == 'estado' and dir == 'desc' %}asc{% else %}desc{% endif %}{% if tipo_filtro %}&tipo={{ tipo_filtro }}{% endif %}{% if estado_filtro %}&estado={{ estado_filtro }}{% endif %}{% if periodo_filtro %}&periodo={{ periodo_filtro }}{% endif %}{% if anio_filtro %}&anio={{ anio_filtro }}{% endif %}{% if busqueda %}&q={{ busqueda }}{% endif %}" class="sort-link" title="Ordenar por Estado">
+                <span>Estado</span>
+                <span class="sort-icon">{% if orden == 'estado' %}{% if dir == 'desc' %}▼{% else %}▲{% endif %}{% else %}⇅{% endif %}</span>
+              </a>
+            </th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for doc in documentos %}
+            <tr>
+              <td>
+                <a href="{% url 'detalle_documento' doc.pk %}" class="td-num-link">
+                  {{ doc.numero }}
+                </a>
+              </td>
+              <td>{{ doc.get_tipo_display }}</td>
+              <td>{{ doc.fecha|date:"d M Y" }}</td>
+              <td>{{ doc.destinatario|default:"–"|truncatechars:35 }}</td>
+              <td class="td-asunto-bold">{{ doc.asunto }}</td>
+              <td>
+                <span class="badge badge-{{ doc.estado|lower }}">
+                  {{ doc.get_estado_display }}
+                </span>
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Paginación Inferior -->
+    <div class="table-pagination-footer">
+      <div class="pagination-info">
+        Mostrando {{ page_obj.start_index }}–{{ page_obj.end_index }} de {{ total_filtrados }} documentos
+      </div>
+      <div class="pagination-controls">
+        {% if page_obj.has_previous %}
+          <a href="?page={{ page_obj.previous_page_number }}{% if tipo_filtro %}&tipo={{ tipo_filtro }}{% endif %}{% if estado_filtro %}&estado={{ estado_filtro }}{% endif %}{% if periodo_filtro %}&periodo={{ periodo_filtro }}{% endif %}{% if orden %}&orden={{ orden }}{% endif %}{% if dir %}&dir={{ dir }}{% endif %}{% if busqueda %}&q={{ busqueda }}{% endif %}" class="btn-page">
+            Anterior
+          </a>
+        {% else %}
+          <span class="btn-page disabled">Anterior</span>
+        {% endif %}
+
+        {% if page_obj.has_next %}
+          <a href="?page={{ page_obj.next_page_number }}{% if tipo_filtro %}&tipo={{ tipo_filtro }}{% endif %}{% if estado_filtro %}&estado={{ estado_filtro }}{% endif %}{% if periodo_filtro %}&periodo={{ periodo_filtro }}{% endif %}{% if orden %}&orden={{ orden }}{% endif %}{% if dir %}&dir={{ dir }}{% endif %}{% if busqueda %}&q={{ busqueda }}{% endif %}" class="btn-page">
+            Siguiente
+          </a>
+        {% else %}
+          <span class="btn-page disabled">Siguiente</span>
+        {% endif %}
+      </div>
+    </div>
+
+  {% else %}
+    <div style="text-align: center; padding: 60px 20px; color: var(--text-muted);">
+      <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="margin-bottom: 12px; color: #cbd5e1;">
+        <circle cx="11" cy="11" r="8"></circle>
+        <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+      </svg>
+      <p style="font-size: 15px; font-weight: 500; margin-bottom: 16px;">No se encontraron documentos con los filtros aplicados.</p>
+      <a href="{% url 'crear_documento' %}" class="btn btn-primary btn-sm">Crear nuevo documento</a>
+    </div>
+  {% endif %}
+</div>
+
+<script>
+function toggleFiltrosAvanzados() {
+  const container = document.getElementById('filters-container');
+  const label = document.getElementById('label-toggle-filtros');
+  if (!container) return;
+  const isExp = container.classList.toggle('is-expanded');
+  if (label) {
+    label.textContent = isExp ? 'Ocultar filtros' : 'Desplegar filtros';
+  }
+  try {
+    sessionStorage.setItem('docu_filtros_expanded', isExp ? '1' : '0');
+  } catch (e) {}
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  const container = document.getElementById('filters-container');
+  const label = document.getElementById('label-toggle-filtros');
+  if (!container) return;
+
+  const activeCount = parseInt("{{ filtros_activos_count|default:'0' }}", 10);
+  let savedState = null;
+  try {
+    savedState = sessionStorage.getItem('docu_filtros_expanded');
+  } catch (e) {}
+
+  let shouldExpand = false;
+  if (savedState !== null) {
+    shouldExpand = savedState === '1';
+  } else {
+    shouldExpand = activeCount > 0;
+  }
+
+  if (shouldExpand) {
+    container.classList.add('is-expanded');
+    if (label) label.textContent = 'Ocultar filtros';
+  } else {
+    container.classList.remove('is-expanded');
+    if (label) label.textContent = 'Desplegar filtros';
+  }
+});
+</script>
+
+{% endblock %}

@@ -1,0 +1,58 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.egg
+*.egg-info/
+dist/
+build/
+.eggs/
+*.pyo
+
+# Django
+*.log
+local_settings.py
+db.sqlite3
+db.sqlite3-journal
+media/
+
+# Entornos virtuales
+.env
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Static files recolectados
+staticfiles/
+
+# Archivos sensibles
+*.pem
+*.key
+secrets.json
+
+# Carpetas de trabajo local
+para_analizar/
+respaldos/
+verificacion/
+
+# Migraciones (opcional - descomentar si no quieres versionar migraciones)
+# */migrations/
+
+# Docker volúmenes locales
+postgres_data/

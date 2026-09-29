@@ -1,0 +1,97 @@
+version: '3.8'
+
+services:
+  # ========================================================
+  # Aplicación Principal: Docu IT (Django + Gunicorn + WhiteNoise)
+  # ========================================================
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: docu-it:latest
+    container_name: docu_app
+    restart: always
+    ports:
+      - "8000:8000"
+    environment:
+      # Llave secreta (definir una única y segura en Coolify)
+      - SECRET_KEY=${SECRET_KEY:-django-insecure-coolify-cambiar-en-produccion-2026}
+      # Modo producción desactivando DEBUG
+      - DEBUG=${DEBUG:-False}
+      # Dominios permitidos (ej: docu.midominio.com,localhost,*)
+      - ALLOWED_HOSTS=${ALLOWED_HOSTS:-*}
+      # Orígenes seguros CSRF requeridos para HTTPS / Coolify (ej: https://docu.midominio.com)
+      - CSRF_TRUSTED_ORIGINS=${CSRF_TRUSTED_ORIGINS:-http://localhost:8000}
+      
+      # --- Configuración PostgreSQL ---
+      # Opción 1: Variables individuales
+      - DB_NAME=${DB_NAME:-}
+      - DB_USER=${DB_USER:-}
+      - DB_PASSWORD=${DB_PASSWORD:-}
+      - DB_HOST=${DB_HOST:-}
+      - DB_PORT=${DB_PORT:-5432}
+      # Opción 2: DATABASE_URL única (ej. generada por Coolify al linkear un Postgres)
+      - DATABASE_URL=${DATABASE_URL:-}
+
+      # Fallback SQLite (solo si no se configura PostgreSQL)
+      - SQLITE_DB_PATH=/app/data/db.sqlite3
+
+      # Variables opcionales para crear superusuario administrador al inicio
+      - DJANGO_SUPERUSER_USERNAME=${DJANGO_SUPERUSER_USERNAME:-}
+      - DJANGO_SUPERUSER_PASSWORD=${DJANGO_SUPERUSER_PASSWORD:-}
+      - DJANGO_SUPERUSER_EMAIL=${DJANGO_SUPERUSER_EMAIL:-admin@docu.local}
+      # Workers de Gunicorn
+      - GUNICORN_WORKERS=${GUNICORN_WORKERS:-3}
+      - GUNICORN_TIMEOUT=${GUNICORN_TIMEOUT:-120}
+    volumes:
+      # Persistencia de archivos PDF, escaneos y adjuntos subidos
+      - docu_media:/app/media
+      # Persistencia de la base de datos SQLite (si se usa SQLite en vez de Postgres)
+      - docu_data:/app/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/login/"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+
+  # ========================================================
+  # Base de Datos PostgreSQL (Opcional si se orquesta en el mismo docker-compose)
+  # ========================================================
+  # db:
+  #   image: postgres:16-alpine
+  #   container_name: docu_postgres
+  #   restart: always
+  #   environment:
+  #     POSTGRES_DB: ${DB_NAME:-docu_db}
+  #     POSTGRES_USER: ${DB_USER:-docu_user}
+  #     POSTGRES_PASSWORD: ${DB_PASSWORD:-docu_secure_pass}
+  #   volumes:
+  #     - docu_postgres_data:/var/lib/postgresql/data
+  #   healthcheck:
+  #     test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-docu_user} -d ${DB_NAME:-docu_db}"]
+  #     interval: 10s
+  #     timeout: 5s
+  #     retries: 5
+
+volumes:
+  # Volumen para PDFs y archivos generados
+  # ----------------------------------------------------
+  # Opción A: Volumen Docker estándar (por defecto)
+  docu_media:
+    name: docu_media_volume
+
+  # Opción B: Carpeta compartida de Windows (SMB/CIFS) directamente como volumen de Docker
+  # (Requiere 'cifs-utils' instalado en el servidor host de Coolify)
+  # docu_media:
+  #   driver: local
+  #   driver_opts:
+  #     type: cifs
+  #     o: "username=${SMB_USER},password=${SMB_PASS},domain=${SMB_DOMAIN:-},vers=3.0,file_mode=0777,dir_mode=0777"
+  #     device: "//${SMB_SERVER_IP}/${SMB_SHARE_NAME}"
+
+  docu_data:
+    name: docu_data_volume
+
+  # docu_postgres_data:
+  #   name: docu_postgres_volume

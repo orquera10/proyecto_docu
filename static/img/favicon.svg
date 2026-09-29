@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+  <defs>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#3b82f6"/>
+      <stop offset="100%" stop-color="#1d4ed8"/>
+    </linearGradient>
+    <filter id="shadow" x="-10%" y="-10%" width="120%" height="125%">
+      <feDropShadow dx="0" dy="2" stdDeviation="2" flood-color="#000000" flood-opacity="0.25"/>
+    </filter>
+  </defs>
+  <!-- Background with rounded corners -->
+  <rect width="64" height="64" rx="14" fill="url(#bgGrad)"/>
+  <!-- Document paper with drop shadow -->
+  <g filter="url(#shadow)">
+    <path d="M18 12 h17 l13 13 v23 a4 4 0 0 1 -4 4 H18 a4 4 0 0 1 -4 -4 V16 a4 4 0 0 1 4 -4 z" fill="#ffffff"/>
+    <!-- Folded corner -->
+    <path d="M35 12 v11 a2 2 0 0 0 2 2 h11 z" fill="#bfdbfe"/>
+    <!-- Decorative doc lines -->
+    <rect x="22" y="28" width="20" height="3" rx="1.5" fill="#2563eb"/>
+    <rect x="22" y="34.5" width="20" height="3" rx="1.5" fill="#60a5fa"/>
+    <rect x="22" y="41" width="13" height="3" rx="1.5" fill="#93c5fd"/>
+  </g>
+</svg>

@@ -1,0 +1,42 @@
+{% extends 'base.html' %}
+{% block title %}Eliminar {{ doc.numero }} – Docu Gestión Documental{% endblock %}
+
+{% block breadcrumbs %}
+  <span class="breadcrumb-separator">›</span>
+  <a href="{% url 'lista_documentos' %}">Documentos</a>
+  <span class="breadcrumb-separator">›</span>
+  <a href="{% url 'detalle_documento' doc.pk %}">{{ doc.numero }}</a>
+  <span class="breadcrumb-separator">›</span>
+  <span class="breadcrumb-current">Eliminar</span>
+{% endblock %}
+
+{% block page_title %}Confirmar Eliminación{% endblock %}
+
+{% block content %}
+<div class="ui-card" style="max-width: 520px; margin: 40px auto; text-align: center; padding: 40px 32px;">
+  <div style="width: 56px; height: 56px; border-radius: 50%; background: #fee2e2; color: #ef4444; display: inline-flex; align-items: center; justify-content: center; margin-bottom: 20px;">
+    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
+      <line x1="12" y1="9" x2="12" y2="13"></line>
+      <line x1="12" y1="17" x2="12.01" y2="17"></line>
+    </svg>
+  </div>
+
+  <h3 style="font-size: 19px; font-weight: 800; color: var(--text-main); margin-bottom: 10px;">¿Eliminar este documento?</h3>
+  <p style="font-size: 13.5px; color: var(--text-muted); line-height: 1.6; margin-bottom: 28px;">
+    Está a punto de eliminar permanentemente el documento <strong style="color: var(--text-main);">{{ doc.numero }}</strong> ({{ doc.asunto }}).<br>
+    Esta acción no se puede deshacer.
+  </p>
+
+  <form method="post" style="display: flex; gap: 12px; justify-content: center;">
+    {% csrf_token %}
+    <a href="{% url 'detalle_documento' doc.pk %}" class="btn btn-outline" style="padding: 10px 22px;">
+      Cancelar
+    </a>
+    <button type="submit" class="btn btn-danger" style="padding: 10px 22px;">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+      <span>Sí, eliminar documento</span>
+    </button>
+  </form>
+</div>
+{% endblock %}

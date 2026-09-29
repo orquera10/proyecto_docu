@@ -1,0 +1,1945 @@
+{% extends 'base.html' %}
+{% block title %}{{ accion }} – Docu Gestión Documental{% endblock %}
+
+{% block breadcrumbs %}
+  <span class="breadcrumb-separator">›</span>
+  <span class="breadcrumb-current">{% if modo == 'editar' %}Editar Documento{% else %}Nuevo Documento{% endif %}</span>
+{% endblock %}
+
+{% block page_title %}{{ accion }}{% endblock %}
+
+{% block content %}
+
+<form method="post" id="doc-form" enctype="multipart/form-data">
+  {% csrf_token %}
+  {% if nota_recibida %}
+    <input type="hidden" name="nota_recibida_id" value="{{ nota_recibida.pk }}">
+    <div style="background: #ecfdf5; border: 1px solid #a7f3d0; border-radius: 8px; padding: 12px 18px; margin-bottom: 20px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px;">
+      <div style="display: flex; align-items: center; gap: 10px;">
+        <span style="font-weight: 700; color: #065f46; font-size: 13.5px;">Respondiendo a:</span>
+        <span style="font-weight: 600; color: #047857; font-size: 13.5px;">Nota Recibida {{ nota_recibida.numero_registro }} – {{ nota_recibida.remitente_origen }}</span>
+      </div>
+      <a href="{% url 'detalle_nota_recibida' nota_recibida.pk %}" target="_blank" style="font-size: 12.5px; color: #059669; font-weight: 600; text-decoration: underline;">Ver nota recibida ↗</a>
+    </div>
+  {% endif %}
+
+  <div class="ui-card doc-form-card">
+    <!-- Encabezado de la Tarjeta -->
+    <div class="form-header-row">
+      <div class="form-header-titles">
+        <h3>Datos Generales del Documento</h3>
+        <p>Defina el tipo y la información básica de registro</p>
+      </div>
+      <div class="initial-status-tag">
+        <span>ESTADO INICIAL:</span>
+        <span class="badge badge-borrador">Borrador</span>
+      </div>
+    </div>
+
+    <!-- Fila 1: Píldoras de Tipo + Número Correlativo + Fecha -->
+    <div class="form-row-top">
+      <!-- Selector de Tipo por Píldoras -->
+      <div class="form-field-group" style="margin-bottom: 0;">
+        <label class="form-field-label">Tipo de Documento</label>
+        <div class="pill-selector-group">
+          <!-- Campos ocultos para Django Form -->
+          <input type="hidden" name="tipo" id="id_tipo" value="{{ form.tipo.value|default:'NOTA' }}">
+          <input type="hidden" name="estado" id="id_estado" value="{{ form.estado.value|default:'BORRADOR' }}">
+
+          <button type="button" class="pill-radio-item {% if form.tipo.value == 'NOTA' or not form.tipo.value %}selected{% endif %}" onclick="selectDocType('NOTA', this)">
+            <span class="pill-indicator-dot"></span>
+            <span>Notas</span>
+          </button>
+          <button type="button" class="pill-radio-item {% if form.tipo.value == 'INFORME' %}selected{% endif %}" onclick="selectDocType('INFORME', this)">
+            <span class="pill-indicator-dot"></span>
+            <span>Informes</span>
+          </button>
+          <button type="button" class="pill-radio-item {% if form.tipo.value == 'ACTA' %}selected{% endif %}" onclick="selectDocType('ACTA', this)">
+            <span class="pill-indicator-dot"></span>
+            <span>Actas de Entrega</span>
+          </button>
+        </div>
+        {% if form.tipo.errors %}<div style="color:#ef4444;font-size:12px;margin-top:4px;">{{ form.tipo.errors }}</div>{% endif %}
+      </div>
+
+      <!-- Número Correlativo (Auto) -->
+      <div class="form-field-group" style="margin-bottom: 0;">
+        <label class="form-field-label">Número correlativo (Auto)</label>
+        <div class="input-with-icon">
+          <span class="input-icon-left">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+          </span>
+          <input type="text" id="id_correlativo_preview" class="form-input-styled" value="{{ proximo_numero }}" readonly style="background:#f8fafc; font-weight:600; color:var(--primary);">
+        </div>
+      </div>
+
+      <!-- Fecha de Emisión -->
+      <div class="form-field-group" style="margin-bottom: 0;">
+        <label class="form-field-label">Fecha de Emisión</label>
+        <div class="input-with-icon">
+          <span class="input-icon-left">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+          </span>
+          <input type="date" name="fecha" id="id_fecha" class="form-input-styled" value="{{ form.fecha.value|date:'Y-m-d'|default:form.fecha.value }}" required>
+        </div>
+        {% if form.fecha.errors %}<div style="color:#ef4444;font-size:12px;margin-top:4px;">{{ form.fecha.errors }}</div>{% endif %}
+      </div>
+    </div>
+
+    <!-- Selector de Preformato / Plantilla Oficial SNAF (Filtrado según Tipo) -->
+    <div class="preformato-banner" style="background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: var(--radius-md); padding: 12px 18px; margin-top: 20px; margin-bottom: 0; display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap;">
+      <div style="display: flex; align-items: center; gap: 10px;">
+        <div style="width: 32px; height: 32px; border-radius: var(--radius-sm); background: #dcfce7; color: #15803d; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+            <polyline points="14 2 14 8 20 8"></polyline>
+            <line x1="16" y1="13" x2="8" y2="13"></line>
+            <line x1="16" y1="17" x2="8" y2="17"></line>
+            <polyline points="10 9 9 9 8 9"></polyline>
+          </svg>
+        </div>
+        <div>
+          <div id="preformato-banner-titulo" style="font-size: 13px; font-weight: 700; color: #166534;">Preformatos Oficiales</div>
+          <div id="preformato-banner-subtitulo" style="font-size: 11.5px; color: #15803d;">Cargar automáticamente estructuras y textos protocolares según el tipo</div>
+        </div>
+      </div>
+
+      <div class="preformato-actions-group" style="display: flex; align-items: center; gap: 10px; flex: 1; max-width: 480px;">
+        <select id="preformato-select" class="filter-select-input" onchange="aplicarPreformato(this.value)" style="border-color: #86efac; font-weight: 500; background-color: #ffffff;">
+          <option value="">-- Seleccionar preformato oficial --</option>
+          <optgroup id="optgroup-nota" label="Notas">
+            <option value="insumos" {% if plantilla_seleccionada == 'insumos' %}selected{% endif %}>Nota: Solicitud de Insumos y Hardware (Dra. Marta Iriarte)</option>
+            <option value="herramientas" {% if plantilla_seleccionada == 'herramientas' %}selected{% endif %}>Nota: Herramientas de Mantenimiento Técnico</option>
+            <option value="opd" {% if plantilla_seleccionada == 'opd' %}selected{% endif %}>Nota: Discos y Redes para OPD (Dra. Delia Alancay)</option>
+            <option value="servidor" {% if plantilla_seleccionada == 'servidor' %}selected{% endif %}>Nota: Servidor Virtualizado (Datacenter Provincial)</option>
+            <option value="incidente" {% if plantilla_seleccionada == 'incidente' %}selected{% endif %}>Nota: Reporte de Incidente Crítico y Contingencia</option>
+          </optgroup>
+          <optgroup id="optgroup-informe" label="Informes">
+            <option value="diagnostico_pc" {% if plantilla_seleccionada == 'diagnostico_pc' %}selected{% endif %}>Informe: Diagnóstico Técnico y Reparación de PC</option>
+            <option value="switch_red" {% if plantilla_seleccionada == 'switch_red' %}selected{% endif %}>Informe: Falla y Reemplazo de Switch / Red</option>
+            <option value="mantenimiento" {% if plantilla_seleccionada == 'mantenimiento' %}selected{% endif %}>Informe: Mantenimiento Preventivo de Servidores</option>
+            <option value="impresoras" {% if plantilla_seleccionada == 'impresoras' %}selected{% endif %}>Informe: Estado de Impresoras (HP LaserJet)</option>
+          </optgroup>
+          <optgroup id="optgroup-acta" label="Actas de Entrega">
+            <option value="laptop" {% if plantilla_seleccionada == 'laptop' %}selected{% endif %}>Acta: Asignación de Notebook Lenovo / PC</option>
+            <option value="estabilizador" {% if plantilla_seleccionada == 'estabilizador' %}selected{% endif %}>Acta: Entrega de Estabilizadores de Tensión</option>
+            <option value="prestamo_cpu" {% if plantilla_seleccionada == 'prestamo_cpu' %}selected{% endif %}>Acta: Préstamo de CPU en Reparación</option>
+          </optgroup>
+        </select>
+        <button type="button" class="btn btn-outline btn-sm" onclick="limpiarCampos()" title="Limpiar y redactar en blanco" style="background: white; white-space: nowrap;">
+          En blanco
+        </button>
+      </div>
+    </div>
+
+    <!-- Fila 2: Remitente & Destinatario -->
+    <div class="form-row-two-col" style="margin-top: 20px;">
+      <div class="form-field-group">
+        <label class="form-field-label">Remitente (Emisor)</label>
+        <div class="input-with-icon">
+          <span class="input-icon-left">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+          </span>
+          <input type="text" name="remitente" id="id_remitente" class="form-input-styled" value="{{ form.remitente.value|default:'' }}" placeholder="Nombre y apellido del emisor" required>
+        </div>
+        {% if form.remitente.errors %}<div style="color:#ef4444;font-size:12px;margin-top:4px;">{{ form.remitente.errors }}</div>{% endif %}
+      </div>
+
+      <div class="form-field-group" id="grupo-destinatario-acta" style="display: none;">
+        <label class="form-field-label" id="label_destinatario">Sector o Dependencia de Destino</label>
+        <div class="input-with-icon">
+          <span class="input-icon-left">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+          </span>
+          <input type="text" name="destinatario" id="id_destinatario" class="form-input-styled" value="{{ form.destinatario.value|default:'' }}" placeholder="Ej: OPD Cuyaya / Dirección de Recursos Humanos">
+        </div>
+        <span id="help_destinatario" style="font-size: 11px; color: var(--text-muted); margin-top: 4px; display: block;">Sector o dependencia al que pertenece la persona que recibe el equipamiento.</span>
+        {% if form.destinatario.errors %}<div style="color:#ef4444;font-size:12px;margin-top:4px;">{{ form.destinatario.errors }}</div>{% endif %}
+      </div>
+    </div>
+
+    <!-- Fila exclusiva para Notas e Informes: Cargo y Nombre del Destinatario -->
+    <div id="seccion-destinatario-nota-informe" class="form-row-two-col" style="margin-top: 18px;">
+      <div class="form-field-group">
+        <label class="form-field-label">Cargo / Organismo al que va dirigido</label>
+        <div class="input-with-icon">
+          <span class="input-icon-left">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+          </span>
+          <input type="text" name="destinatario_cargo" id="id_destinatario_cargo" class="form-input-styled" value="{{ form.destinatario_cargo.value|default:'' }}" placeholder="Ej: A LA SECRETARIA DE NIÑEZ, ADOLESCENCIA Y FAMILIA">
+        </div>
+        <span style="font-size: 11px; color: var(--text-muted); margin-top: 4px; display: block;">Saldrá en la primera línea en mayúsculas y negrita.</span>
+        {% if form.destinatario_cargo.errors %}<div style="color:#ef4444;font-size:12px;margin-top:4px;">{{ form.destinatario_cargo.errors }}</div>{% endif %}
+      </div>
+
+      <div class="form-field-group">
+        <label class="form-field-label">Nombre y Apellido de la Persona Destinataria</label>
+        <div class="input-with-icon">
+          <span class="input-icon-left">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+          </span>
+          <input type="text" name="destinatario_nombre" id="id_destinatario_nombre" class="form-input-styled" value="{{ form.destinatario_nombre.value|default:'' }}" placeholder="Ej: Dra. Marta Iriarte">
+        </div>
+        <span style="font-size: 11px; color: var(--text-muted); margin-top: 4px; display: block;">Saldrá debajo del cargo en mayúsculas y negrita, seguido de SU DESPACHO.</span>
+        {% if form.destinatario_nombre.errors %}<div style="color:#ef4444;font-size:12px;margin-top:4px;">{{ form.destinatario_nombre.errors }}</div>{% endif %}
+      </div>
+    </div>
+
+    <!-- Fila exclusiva para Actas: Datos de quien recibe (Opcional para que salga impreso) -->
+    <div id="seccion-receptor-acta" class="form-row-two-col" style="margin-top: 18px; display: none;">
+      <div class="form-field-group">
+        <label class="form-field-label">Persona que Recibe (Aclaración / Nombre completo)</label>
+        <div class="input-with-icon">
+          <span class="input-icon-left">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+          </span>
+          <input type="text" name="receptor_nombre" id="id_receptor_nombre" class="form-input-styled" value="{{ form.receptor_nombre.value|default:'' }}" placeholder="Ej: Juan Pérez (o dejar vacío para completar a mano)">
+        </div>
+        <span style="font-size: 11px; color: var(--text-muted); margin-top: 4px; display: block;">Si lo completas, saldrá impreso en el acta y solo se dejará la línea para su firma.</span>
+        {% if form.receptor_nombre.errors %}<div style="color:#ef4444;font-size:12px;margin-top:4px;">{{ form.receptor_nombre.errors }}</div>{% endif %}
+      </div>
+
+      <div class="form-field-group">
+        <label class="form-field-label">DNI de quien Recibe</label>
+        <div class="input-with-icon">
+          <span class="input-icon-left">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="16" rx="2"></rect><line x1="7" y1="8" x2="17" y2="8"></line><line x1="7" y1="12" x2="13" y2="12"></line></svg>
+          </span>
+          <input type="text" name="receptor_dni" id="id_receptor_dni" class="form-input-styled" value="{{ form.receptor_dni.value|default:'' }}" placeholder="Ej: 35.123.456 (o dejar vacío para completar a mano)">
+        </div>
+        <span style="font-size: 11px; color: var(--text-muted); margin-top: 4px; display: block;">Opcional. Se imprimirá en el casillero correspondiente al receptor.</span>
+        {% if form.receptor_dni.errors %}<div style="color:#ef4444;font-size:12px;margin-top:4px;">{{ form.receptor_dni.errors }}</div>{% endif %}
+      </div>
+    </div>
+
+    <!-- Fila 3: Asunto -->
+    <div class="form-field-group">
+      <label class="form-field-label">Asunto</label>
+      <div class="input-with-icon">
+        <span class="input-icon-left">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path><polyline points="22,6 12,13 2,6"></polyline></svg>
+        </span>
+        <input type="text" name="asunto" id="id_asunto" class="form-input-styled" value="{{ form.asunto.value|default:'' }}" placeholder="Ej: Mantenimiento planificado y migración del servidor de Base de Datos principal" required>
+      </div>
+      {% if form.asunto.errors %}<div style="color:#ef4444;font-size:12px;margin-top:4px;">{{ form.asunto.errors }}</div>{% endif %}
+    </div>
+
+    <!-- Fila 4: Cuerpo del Documento con Toolbar -->
+    <div class="form-field-group">
+      <label class="form-field-label">Cuerpo del Documento</label>
+      <div class="editor-container">
+        <!-- Toolbar de formato -->
+        <div class="editor-toolbar">
+          <button type="button" class="toolbar-btn" onclick="formatVisual('bold')" title="Negrita (Ctrl+B)"><b>B</b></button>
+          <button type="button" class="toolbar-btn" onclick="formatVisual('italic')" title="Cursiva (Ctrl+I)"><i>I</i></button>
+          <button type="button" class="toolbar-btn" onclick="formatVisual('underline')" title="Subrayado (Ctrl+U)"><u>U</u></button>
+          <button type="button" class="toolbar-btn" onclick="formatVisual('strikeThrough')" title="Tachado"><s>S</s></button>
+          <span class="toolbar-separator"></span>
+          <button type="button" class="toolbar-btn" onclick="formatVisual('insertUnorderedList')" title="Viñeta">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><circle cx="4" cy="6" r="3"></circle><circle cx="4" cy="12" r="3"></circle><circle cx="4" cy="18" r="3"></circle><line x1="10" y1="6" x2="20" y2="6" stroke="currentColor" stroke-width="2"></line><line x1="10" y1="12" x2="20" y2="12" stroke="currentColor" stroke-width="2"></line><line x1="10" y1="18" x2="20" y2="18" stroke="currentColor" stroke-width="2"></line></svg>
+          </button>
+          <button type="button" class="toolbar-btn" onclick="formatVisual('insertOrderedList')" title="Lista Numerada">
+            <span style="font-size:11px;font-weight:700;">1.</span>
+          </button>
+          <span class="toolbar-separator"></span>
+          <button type="button" class="toolbar-btn" onclick="triggerEditorImageUpload()" title="Insertar imagen en el texto (en la posición del cursor)" style="display: flex; align-items: center; gap: 5px; padding: 4px 10px; width: auto; color: var(--primary); background: #eff6ff; border-radius: var(--radius-sm); border: 1px solid #bfdbfe;">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+              <circle cx="8.5" cy="8.5" r="1.5"></circle>
+              <polyline points="21 15 16 10 5 21"></polyline>
+            </svg>
+            <span id="btn-insert-img-label" style="font-size: 11.5px; font-weight: 600;">Insertar Imagen</span>
+          </button>
+          <button type="button" class="toolbar-btn" onclick="insertarTablaVisualPrompt()" title="Insertar tabla en el documento (o podés pegar directo celdas desde Excel)" style="display: flex; align-items: center; gap: 5px; padding: 4px 10px; width: auto; color: #047857; background: #ecfdf5; border-radius: var(--radius-sm); border: 1px solid #a7f3d0;">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+              <line x1="3" y1="9" x2="21" y2="9"></line>
+              <line x1="3" y1="15" x2="21" y2="15"></line>
+              <line x1="9" y1="3" x2="9" y2="21"></line>
+              <line x1="15" y1="3" x2="15" y2="21"></line>
+            </svg>
+            <span style="font-size: 11.5px; font-weight: 600;">Insertar Tabla</span>
+          </button>
+          <input type="file" id="editor-image-file-input" accept="image/png,image/jpeg,image/webp,image/gif" style="display: none;" onchange="handleEditorImageUpload(this)">
+          <input type="hidden" name="adjuntos_ids" id="id_adjuntos_ids" value="">
+
+          <!-- Botón de Alternancia Modo Visual / Modo Código -->
+          <button type="button" class="toolbar-btn" id="btn-toggle-editor-mode" onclick="toggleEditorMode()" title="Alternar entre edición visual tipo Word y código Markdown" style="margin-left: auto; width: auto; padding: 4px 10px; font-size: 11.5px; font-weight: 600; color: #475569; background: #ffffff; border: 1px solid #cbd5e1; border-radius: var(--radius-sm); display: flex; align-items: center; gap: 5px;">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"></polyline><polyline points="8 6 2 12 8 18"></polyline></svg>
+            <span id="label-toggle-editor-mode">Ver Código</span>
+          </button>
+        </div>
+
+        <!-- Barra rápida contextual de tabla (aparece al hacer foco en una celda) -->
+        <div id="table-quick-actions-bar" class="table-quick-actions">
+          <span style="font-weight: 700; color: #0f172a; margin-right: 4px; display: flex; align-items: center; gap: 4px;">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"></rect><line x1="3" y1="9" x2="21" y2="9"></line><line x1="9" y1="3" x2="9" y2="21"></line></svg>
+            Tabla:
+          </span>
+          <button type="button" class="table-quick-btn" onclick="agregarFilaTabla()" title="Agregar una fila debajo de la actual">➕ Fila abajo</button>
+          <button type="button" class="table-quick-btn" onclick="eliminarFilaTabla()" title="Eliminar la fila actual">➖ Eliminar fila</button>
+          <span style="width: 1px; height: 14px; background: #cbd5e1; margin: 0 2px;"></span>
+          <button type="button" class="table-quick-btn" onclick="agregarColumnaTabla()" title="Agregar una columna a la derecha">➕ Columna der.</button>
+          <button type="button" class="table-quick-btn" onclick="eliminarColumnaTabla()" title="Eliminar la columna actual">➖ Eliminar columna</button>
+          <span style="width: 1px; height: 14px; background: #cbd5e1; margin: 0 2px;"></span>
+          <button type="button" class="table-quick-btn danger" onclick="eliminarTablaActual()" title="Eliminar la tabla completa">🗑️ Quitar tabla</button>
+        </div>
+
+        <!-- Área de Edición Visual WYSIWYG -->
+        <div id="editor-visual" class="editor-visual-canvas" contenteditable="true" spellcheck="true" role="textbox" aria-multiline="true" placeholder="Redacte aquí el contenido del documento..."></div>
+
+        <!-- Textarea original sincronizado (oculto en modo visual para enviar en el POST) -->
+        <textarea name="cuerpo" id="id_cuerpo" class="editor-textarea" rows="10" placeholder="Redacte aquí el contenido del documento..." style="display: none;">{{ form.cuerpo.value|default:'' }}</textarea>
+      </div>
+      {% if form.cuerpo.errors %}<div style="color:#ef4444;font-size:12px;margin-top:4px;">{{ form.cuerpo.errors }}</div>{% endif %}
+    </div>
+
+    <!-- Sección Dinámica: Ítems del Acta (Solo visible cuando Tipo = ACTA) -->
+    <div id="acta-section" class="acta-section-card" style="display:none;">
+      <div class="acta-section-header">
+        <div class="acta-header-left">
+          <div class="acta-header-icon">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
+              <polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline>
+              <line x1="12" y1="22.08" x2="12" y2="12"></line>
+            </svg>
+          </div>
+          <div>
+            <div class="acta-header-title">
+              Bienes y Equipamiento a Entregar
+              <span class="acta-badge-pill">Acta Oficial</span>
+            </div>
+            <div class="acta-header-desc">
+              Especifique los equipos, componentes o insumos incluidos en esta entrega física
+            </div>
+          </div>
+        </div>
+
+        <button type="button" class="btn-add-acta-item" id="add-item-btn">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="12" y1="5" x2="12" y2="19"></line>
+            <line x1="5" y1="12" x2="19" y2="12"></line>
+          </svg>
+          <span>Agregar Ítem</span>
+        </button>
+      </div>
+
+      {% if formset %}
+        {{ formset.management_form }}
+        <div id="formset-container" style="display: flex; flex-direction: column; gap: 14px;">
+          {% for item_form in formset %}
+            <div class="formset-item-card" id="item-{{ forloop.counter0 }}">
+              <div class="formset-item-topbar">
+                <div class="item-tag-box">
+                  <span class="item-badge-dot"></span>
+                  <span class="item-badge-number">Ítem #{{ forloop.counter }}</span>
+                </div>
+                {% if formset.can_delete %}
+                  <label class="item-delete-btn" title="Eliminar este ítem">
+                    {{ item_form.DELETE }}
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                    <span>Eliminar</span>
+                  </label>
+                {% endif %}
+              </div>
+              <div class="acta-item-grid">
+                <div>
+                  <label class="acta-field-label">Cant.</label>
+                  {{ item_form.cantidad }}
+                </div>
+                <div class="acta-col-desc">
+                  <label class="acta-field-label">Descripción del Bien / Equipo</label>
+                  {{ item_form.descripcion }}
+                </div>
+                <div>
+                  <label class="acta-field-label">N° de Serie</label>
+                  {{ item_form.numero_serie }}
+                </div>
+                <div>
+                  <label class="acta-field-label">Cód. Inventario</label>
+                  {{ item_form.codigo_inventario }}
+                </div>
+                <div>
+                  <label class="acta-field-label">Condición</label>
+                  {{ item_form.condicion }}
+                </div>
+              </div>
+              {% if item_form.errors %}
+                <div style="color: #ef4444; font-size: 12px; margin-top: 8px;">{{ item_form.errors }}</div>
+              {% endif %}
+              {% for field in item_form.hidden_fields %}{{ field }}{% endfor %}
+            </div>
+          {% endfor %}
+        </div>
+      {% endif %}
+    </div>
+
+    <!-- Fila 5: Archivos Adjuntos (Drag & Drop) -->
+    <div class="form-field-group" style="margin-top: 24px;">
+      <label class="form-field-label">Archivos Adjuntos (Opcional)</label>
+      <div class="attachments-container">
+        <!-- Dropzone Izquierda -->
+        <div class="attachment-dropzone" onclick="document.getElementById('file-upload-input').click()">
+          <input type="file" id="file-upload-input" name="archivos" multiple style="display: none;" onchange="handleFileSelect(this)">
+          <div class="dropzone-icon">
+            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+              <polyline points="17 8 12 3 7 8"></polyline>
+              <line x1="12" y1="3" x2="12" y2="15"></line>
+            </svg>
+          </div>
+          <div class="dropzone-title">Haga clic para subir o arrastre archivos aquí</div>
+          <div class="dropzone-sub">PDF, PNG, JPG hasta 10MB</div>
+        </div>
+
+        <!-- Lista de Archivos Derecha -->
+        <div class="attachment-file-list" id="attachment-file-list">
+          {% if adjuntos %}
+            {% for adj in adjuntos %}
+              <div class="attachment-file-card" id="adjunto-card-{{ adj.id }}">
+                <div class="file-info-left">
+                  <div class="file-icon-box" style="{% if adj.es_imagen %}background:#eff6ff;color:#2563eb;{% elif adj.es_pdf %}background:#fee2e2;color:#dc2626;{% else %}background:#f1f5f9;color:#475569;{% endif %}">
+                    {% if adj.es_imagen %}
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>
+                    {% else %}
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline></svg>
+                    {% endif %}
+                  </div>
+                  <div>
+                    <a href="{{ adj.archivo.url }}" target="_blank" class="file-name-text" style="color:var(--text-color);text-decoration:none;" title="Ver archivo">{{ adj.nombre_original }}</a>
+                    <div class="file-size-text">{{ adj.tamano_formateado }} &bull; Guardado</div>
+                  </div>
+                </div>
+                <div class="file-actions-right">
+                  <input type="checkbox" name="eliminar_adjunto" value="{{ adj.id }}" id="chk-del-{{ adj.id }}" style="display: none;">
+                  <button type="button" class="file-delete-btn" onclick="toggleEliminarAdjuntoExistente({{ adj.id }}, this)" title="Eliminar adjunto">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                  </button>
+                </div>
+              </div>
+            {% endfor %}
+          {% endif %}
+          <div id="no-attachments-msg" style="{% if adjuntos %}display:none;{% endif %}color: var(--text-muted); font-size: 13px; text-align: center; padding: 28px 16px; border: 1px dashed var(--border-color); border-radius: var(--radius-md); display: {% if adjuntos %}none{% else %}flex{% endif %}; flex-direction: column; align-items: center; justify-content: center; gap: 6px; min-height: 110px; background: #fafafa;">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+              <polyline points="14 2 14 8 20 8"></polyline>
+            </svg>
+            <span style="font-weight: 500;">No hay archivos adjuntos seleccionados</span>
+            <span style="font-size: 11.5px; color: var(--text-subtle);">Los archivos que subas aparecerán aquí</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Barra de Acciones Inferior -->
+    <div class="form-bottom-bar">
+      <div class="autosave-notice">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="10"></circle>
+          <line x1="12" y1="16" x2="12" y2="12"></line>
+          <line x1="12" y1="8" x2="12.01" y2="8"></line>
+        </svg>
+        <span>El borrador se guarda automáticamente cada 5 minutos.</span>
+      </div>
+
+      <div class="form-action-buttons">
+        <button type="submit" name="accion_guardar" value="borrador" class="btn btn-outline" style="padding: 10px 20px;">
+          Guardar Borrador
+        </button>
+        <button type="submit" name="accion_guardar" value="emitir" class="btn btn-primary" style="padding: 10px 22px;">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="22" y1="2" x2="11" y2="13"></line>
+            <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+          </svg>
+          <span>Firmar y Enviar Documento</span>
+        </button>
+      </div>
+    </div>
+
+  </div>
+</form>
+
+<script>
+// ─── Estructuras de Preformatos por Tipo de Documento ───────────────────────
+const PREFORMATOS_POR_TIPO = {
+  'NOTA': [
+    { id: 'insumos', titulo: 'Nota: Solicitud de Insumos y Hardware (Dra. Marta Iriarte)' },
+    { id: 'herramientas', titulo: 'Nota: Herramientas de Mantenimiento Técnico' },
+    { id: 'opd', titulo: 'Nota: Discos y Redes para OPD (Dra. Delia Alancay)' },
+    { id: 'servidor', titulo: 'Nota: Servidor Virtualizado (Datacenter Provincial)' },
+    { id: 'incidente', titulo: 'Nota: Reporte de Incidente Crítico y Contingencia' },
+  ],
+  'INFORME': [
+    { id: 'diagnostico_pc', titulo: 'Informe: Diagnóstico Técnico y Reparación de PC' },
+    { id: 'switch_red', titulo: 'Informe: Falla y Reemplazo de Switch / Red' },
+    { id: 'mantenimiento', titulo: 'Informe: Mantenimiento Preventivo de Servidores' },
+    { id: 'impresoras', titulo: 'Informe: Estado de Impresoras (HP LaserJet)' },
+  ],
+  'ACTA': [
+    { id: 'laptop', titulo: 'Acta: Asignación de Notebook Lenovo / PC' },
+    { id: 'estabilizador', titulo: 'Acta: Entrega de Estabilizadores de Tensión' },
+    { id: 'prestamo_cpu', titulo: 'Acta: Préstamo de CPU en Reparación' },
+  ]
+};
+
+const NOMBRES_TIPO = {
+  'NOTA': 'Notas',
+  'INFORME': 'Informes',
+  'ACTA': 'Actas de Entrega'
+};
+
+function actualizarPreformatosPorTipo(type, selectedKey) {
+  const select = document.getElementById('preformato-select');
+  const bannerTitulo = document.getElementById('preformato-banner-titulo');
+  const bannerSubtitulo = document.getElementById('preformato-banner-subtitulo');
+  if (!select) return;
+
+  const lista = PREFORMATOS_POR_TIPO[type] || [];
+  const nombreTipo = NOMBRES_TIPO[type] || type;
+
+  if (bannerTitulo) {
+    bannerTitulo.textContent = `Preformatos para ${nombreTipo}`;
+  }
+  if (bannerSubtitulo) {
+    bannerSubtitulo.textContent = `${lista.length} plantillas protocolares disponibles para este tipo de documento`;
+  }
+
+  // Determinar cuál clave dejar seleccionada
+  let targetKey = selectedKey;
+  if (!targetKey && select.value) {
+    const existeEnTipo = lista.some(item => item.id === select.value);
+    if (existeEnTipo) {
+      targetKey = select.value;
+    }
+  }
+
+  // Reconstruir opciones del select exclusivamente para el tipo seleccionado
+  select.innerHTML = '';
+
+  const defaultOption = document.createElement('option');
+  defaultOption.value = '';
+  defaultOption.textContent = `-- Seleccionar preformato (${lista.length} disponibles) --`;
+  select.appendChild(defaultOption);
+
+  lista.forEach(item => {
+    const opt = document.createElement('option');
+    opt.value = item.id;
+    opt.textContent = item.titulo;
+    if (item.id === targetKey) {
+      opt.selected = true;
+    }
+    select.appendChild(opt);
+  });
+
+  if (targetKey) {
+    select.value = targetKey;
+  } else {
+    select.value = '';
+  }
+}
+
+// Selector de Tipo por Píldoras
+function selectDocType(type, btnElement, initialKey) {
+  const hiddenInput = document.getElementById('id_tipo');
+  if (hiddenInput) {
+    hiddenInput.value = type;
+  }
+
+  // Si no se pasó btnElement, buscar el botón correspondiente
+  if (!btnElement) {
+    document.querySelectorAll('.pill-radio-item').forEach(b => {
+      if (b.textContent.includes('Nota') && type === 'NOTA') btnElement = b;
+      if (b.textContent.includes('Informe') && type === 'INFORME') btnElement = b;
+      if (b.textContent.includes('Acta') && type === 'ACTA') btnElement = b;
+    });
+  }
+
+  // Actualizar estado visual de los botones píldora
+  document.querySelectorAll('.pill-radio-item').forEach(btn => btn.classList.remove('selected'));
+  if (btnElement) {
+    btnElement.classList.add('selected');
+  }
+
+  // Actualizar prefijo del número correlativo
+  const correlativoInput = document.getElementById('id_correlativo_preview');
+  if (correlativoInput) {
+    const prefijos = { 'NOTA': 'NOTA', 'INFORME': 'INF', 'ACTA': 'ACTA' };
+    const prefijo = prefijos[type] || type;
+    const actual = correlativoInput.value;
+    const partes = actual.split('-');
+    if (partes.length >= 2) {
+      correlativoInput.value = prefijo + '-' + partes.slice(1).join('-');
+    }
+  }
+
+  // Mostrar u ocultar sección de acta y datos de quien recibe
+  const actaSection = document.getElementById('acta-section');
+  if (actaSection) {
+    actaSection.style.display = type === 'ACTA' ? 'block' : 'none';
+  }
+
+  const receptorSection = document.getElementById('seccion-receptor-acta');
+  if (receptorSection) {
+    receptorSection.style.display = type === 'ACTA' ? 'grid' : 'none';
+  }
+
+  const seccionDestNotaInf = document.getElementById('seccion-destinatario-nota-informe');
+  const grupoDestActa = document.getElementById('grupo-destinatario-acta');
+  if (seccionDestNotaInf) {
+    seccionDestNotaInf.style.display = (type === 'NOTA' || type === 'INFORME') ? 'grid' : 'none';
+  }
+  if (grupoDestActa) {
+    grupoDestActa.style.display = type === 'ACTA' ? 'block' : 'none';
+  }
+
+  // Valor por defecto para cuerpo de Actas de Entrega
+  const DEFAULT_ACTA_CUERPO = 'Recibí del Área de Informática los bienes que se detallan a continuación.-';
+  const cuerpoInput = document.getElementById('id_cuerpo');
+  if (type === 'ACTA') {
+    if (cuerpoInput && (!cuerpoInput.value || cuerpoInput.value.trim() === '')) {
+      cuerpoInput.value = DEFAULT_ACTA_CUERPO;
+    }
+  } else {
+    if (cuerpoInput && cuerpoInput.value.trim() === DEFAULT_ACTA_CUERPO) {
+      cuerpoInput.value = '';
+    }
+  }
+
+  // Remitente por defecto según el tipo de documento
+  const remitenteInput = document.getElementById('id_remitente');
+  const userEmisor = "{{ nombre_emisor|default:''|escapejs }}";
+  const norm = str => (str || '').normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim().toLowerCase();
+
+  if (type === 'NOTA' || type === 'INFORME') {
+    if (remitenteInput && (!remitenteInput.value.trim() || norm(remitenteInput.value) === norm(userEmisor))) {
+      remitenteInput.value = 'Área de Informática';
+    }
+  } else if (type === 'ACTA') {
+    if (remitenteInput && (!remitenteInput.value.trim() || norm(remitenteInput.value) === norm('Área de Informática'))) {
+      remitenteInput.value = userEmisor;
+    }
+  }
+
+  // Habilitar y filtrar únicamente los preformatos de este tipo
+  actualizarPreformatosPorTipo(type, initialKey);
+}
+
+// ─── Diccionario de Preformatos Oficiales SNAF Informática ──────────────────
+const PREFORMATOS = {
+  insumos: {
+    tipo: 'NOTA',
+    destinatario: 'A la Secretaria de Niñez, Adolescencia y Familia\nDra. MARTA IRIARTE\nSu Despacho:',
+    destinatario_cargo: 'A LA SECRETARIA DE NIÑEZ, ADOLESCENCIA Y FAMILIA',
+    destinatario_nombre: 'DRA. MARTA IRIARTE',
+    asunto: 'Solicitud urgente de adquisición de diversos insumos y equipamiento para Informática',
+    cuerpo: `Me dirijo a usted a fin de reiterar con carácter urgente la solicitud de adquisición de diversos elementos esenciales para el correcto funcionamiento y mantenimiento del equipamiento informático en todas las áreas que conforman esta Secretaría.
+
+Dado que estos recursos son esenciales para asegurar la operatividad, eficiencia y mantenimiento, se detalla a continuación el listado de materiales requeridos, organizados por categoría para mayor claridad:
+
+1. Almacenamiento y componentes de hardware
+• Discos SSD (120 GB / 240 GB / 480 GB SATA) para agilizar tareas administrativas en equipos existentes.
+• Discos duros para servidor (4 TB / 8 TB SATA 7200 RPM para NAS) necesarios para almacenamiento centralizado y copias de seguridad.
+
+2. Periféricos
+• Teclados y mouse ópticos USB para recambio en puestos de trabajo.
+• Monitores LED de 19" / 22" para reemplazo de unidades fuera de servicio.
+
+3. Equipamiento de red y energía
+• Placas de red Wi-Fi (USB o PCI-Express) para dependencias sin cableado estructurado.
+• Estabilizadores de tensión para protección eléctrica de puestos informáticos.
+• Bobina de cable de red UTP Cat 6 y conectores RJ45.
+
+Todos estos insumos y componentes tienen como objetivo mejorar el rendimiento, la estabilidad y la capacidad de respuesta del Departamento de Informática, impactando de manera directa en el soporte y funcionamiento tecnológico de todas las áreas de la Secretaría de Niñez, Adolescencia y Familia.
+
+Sin otro particular y en espera de una respuesta favorable me despido de Ud. con atenta consideración y respeto.-`
+  },
+
+  herramientas: {
+    tipo: 'NOTA',
+    destinatario: 'A la Secretaria de Niñez, Adolescencia y Familia\nDra. MARTA IRIARTE\nSu Despacho:',
+    destinatario_cargo: 'A LA SECRETARIA DE NIÑEZ, ADOLESCENCIA Y FAMILIA',
+    destinatario_nombre: 'DRA. MARTA IRIARTE',
+    asunto: 'Solicitud de adquisición de herramientas de mantenimiento técnico para Informática',
+    cuerpo: `Me dirijo a usted a fin de solicitar la adquisición de herramientas de mantenimiento técnico esenciales para el correcto funcionamiento del equipamiento informático en todas las áreas que conforman esta Secretaría.
+
+Dado que estos recursos son esenciales para asegurar la operatividad, eficiencia y tareas de mantenimiento preventivo y correctivo, se detalla a continuación el listado de herramientas requeridas:
+
+• Tester probador de cable de red RJ45 / RJ11
+• Pinza crimpeadora profesional para fichas RJ45
+• Juego de destornilladores de precisión para equipos informáticos y notebooks
+• Soplador térmico / aspirador antiestático para limpieza de servidores y switches
+• Pulseras y alfombrillas antiestáticas ESD para banco de trabajo
+• Multímetro digital para diagnóstico de fuentes de alimentación
+
+Todas estas herramientas tienen como objetivo mejorar el rendimiento, la estabilidad y la capacidad de respuesta del Departamento de Informática, impactando de manera directa en el soporte y funcionamiento tecnológico de todas las áreas.
+
+Sin otro particular y en espera de una respuesta favorable me despido de Ud. con atenta consideración y respeto.-`
+  },
+
+  opd: {
+    tipo: 'NOTA',
+    destinatario: 'A la Coordinadora de OPD de la\nSecretaría de Niñez, Adolescencia y Familia\nDra. DELIA ALANCAY\nSu Despacho:',
+    destinatario_cargo: 'A LA COORDINADORA DE OPD DE LA SECRETARÍA DE NIÑEZ, ADOLESCENCIA Y FAMILIA',
+    destinatario_nombre: 'DRA. DELIA ALANCAY',
+    asunto: 'Solicitud de adquisición de discos SSD, placas Wi-Fi y puntos de acceso para Oficinas de Protección de Derechos (OPD)',
+    cuerpo: `Me dirijo a usted con el fin de informar la situación actual de distintos equipos informáticos y de la infraestructura de conectividad perteneciente a las Oficinas de Protección de Derechos (OPD), y solicitar la adquisición de componentes necesarios para su reparación, puesta en funcionamiento y mejora de la conectividad.
+
+Durante las tareas de revisión y mantenimiento realizadas sobre los equipos informáticos de las distintas dependencias, se detectaron fallas y deterioro en unidades de almacenamiento, encontrándose algunos discos en condición de inoperatividad debido a daños en sus componentes, mientras que otros presentan signos de degradación y disminución de su vida útil. Esta situación puede provocar errores de funcionamiento, pérdida de información y eventuales fallas definitivas de los equipos.
+
+Asimismo, se verificó que determinados equipos no cuentan con adaptadores de red inalámbrica (Wi-Fi) o presentan inconvenientes con los dispositivos actualmente instalados, dificultando su conexión a las redes disponibles en las dependencias.
+
+Por otra parte, se identificó la necesidad de ampliar y mejorar la cobertura de las redes inalámbricas en distintas OPD, especialmente en sectores donde la distribución física de las instalaciones, la distancia respecto de los equipos de red o las características edilicias generan una señal Wi-Fi insuficiente o inestable.
+
+Sin otro particular y a la espera de una resolución favorable, saludo a usted atentamente.-`
+  },
+
+  servidor: {
+    tipo: 'NOTA',
+    destinatario: 'C.P. Santiago Besin\nSecretaría Informática de la Provincia de Jujuy\nSan Salvador de Jujuy',
+    destinatario_cargo: 'AL SECRETARIO DE INFORMÁTICA DE LA PROVINCIA DE JUJUY',
+    destinatario_nombre: 'C.P. SANTIAGO BESIN',
+    asunto: 'Solicitud de provisión de servidor virtualizado para Datacenter SNAF',
+    cuerpo: `Me dirijo a usted en mi calidad de responsable de Informática de la Secretaría de Niñez, Adolescencia y Familia, con el fin de solicitar la provisión de un servidor virtualizado para nuestra institución en el Datacenter Provincial.
+
+Esta solicitud responde a la necesidad de mejorar la eficiencia y la seguridad de nuestros sistemas informáticos y bases de datos documentales, lo que es crucial para el correcto funcionamiento de nuestra labor institucional.
+
+Requerimientos técnicos especificados:
+• Entorno: Servidor virtualizado KVM / VMware
+• Procesamiento: 4 vCPU o superior
+• Memoria RAM: 16 GB DDR4
+• Almacenamiento: 500 GB en arreglo redundante SSD de alto rendimiento
+• Sistema Operativo: Ubuntu Server 24.04 LTS / Debian 12
+• Conectividad: IP fija en la red provincial con acceso seguro VPN/SSH
+
+Agradeciendo de antemano su atención y colaboración, quedo a su disposición para coordinar los detalles técnicos necesarios.
+
+Sin otro particular, saludo a usted muy atentamente.-`
+  },
+
+  incidente: {
+    tipo: 'NOTA',
+    destinatario: 'Equipo de Infraestructura & DevOps',
+    destinatario_cargo: 'AL EQUIPO DE INFRAESTRUCTURA & DEVOPS',
+    destinatario_nombre: '',
+    asunto: 'Reporte de Incidente Crítico y Plan de Contingencia',
+    cuerpo: `1. ANTECEDENTES Y PROPÓSITO
+Se notifica la contingencia técnica registrada en la infraestructura de red y servicios de datos de la institución.
+
+2. VENTANA DE TIEMPO Y RESOLUCIÓN
+Se ejecutaron los procedimientos de contingencia y aislamiento de fallas restableciendo la totalidad de los servicios operativos.`
+  },
+
+  diagnostico_pc: {
+    tipo: 'INFORME',
+    destinatario: 'Coordinación de OPD / Dirección de Despacho\nSecretaría de Niñez, Adolescencia y Familia',
+    destinatario_cargo: 'A LA COORDINACIÓN DE OPD / DIRECCIÓN DE DESPACHO',
+    destinatario_nombre: '',
+    asunto: 'Informe de diagnóstico técnico y solicitud de repuesto - Puesto de trabajo',
+    cuerpo: `1. OBJETO
+El presente informe tiene como finalidad documentar el estado técnico de una unidad central de proceso (PC) perteneciente a la dependencia solicitante y detallar los componentes necesarios para su inmediata puesta en funcionamiento.
+
+2. REVISIÓN Y DIAGNÓSTICO
+Se recibió en este departamento técnico el equipo informático, el cual no presentaba señal de encendido ni respuesta operativa. Tras la inspección técnica especializada en banco de prueba, se determinó lo siguiente:
+
+• Falla Identificada: Fallo total en la fuente de alimentación original debido a sobretensión y degradación en capacitores.
+• Prueba de Validación: Para confirmar el diagnóstico, se procedió a realizar pruebas de encendido y carga utilizando una fuente de alimentación de testeo y disco de prueba.
+• Resultado de la Prueba: Con la fuente de prueba, el equipo funcionó correctamente, logrando un inicio exitoso del sistema operativo y validando la integridad del resto de los componentes (Placa madre, Microprocesador, Memoria RAM).
+
+3. CONCLUSIONES Y RECOMENDACIONES
+Se requiere la provisión de una fuente de alimentación ATX de 500W para proceder al reemplazo definitivo y restituir la operatividad del equipo en su sector.
+
+Sin otro particular, se eleva el presente informe para su conocimiento y los fines que correspondan.`
+  },
+
+  switch_red: {
+    tipo: 'INFORME',
+    destinatario: 'Dirección de Adultos Mayores / Despacho\nSecretaría de Niñez, Adolescencia y Familia',
+    destinatario_cargo: 'A LA DIRECCIÓN DE ADULTOS MAYORES / DESPACHO',
+    destinatario_nombre: '',
+    asunto: 'Informe técnico sobre estado de switch de red y solicitud de reemplazo',
+    cuerpo: `1. OBJETO
+Informar el estado operativo del switch de red que interconecta los puestos de trabajo del sector, y solicitar su reemplazo debido a una falla técnica irreversible que impide su correcto funcionamiento.
+
+2. DIAGNÓSTICO TÉCNICO
+El switch de red principal del sector se encuentra inoperativo y fuera de servicio como consecuencia de descargas eléctricas, ocasionando la interrupción de la conectividad de los equipos informáticos que dependen de dicho dispositivo para acceder a la red institucional e Internet.
+
+3. REQUERIMIENTO Y PROCEDIMIENTO
+Por tal motivo, se solicita la provisión de un switch de red de 16/24 puertos Gigabit 10/100/1000 Mbps. Una vez provisto el nuevo dispositivo, este Departamento de Informática procederá con su montaje en rack, conectorización, configuración de VLANs y verificación del normal acceso a los sistemas.
+
+Sin otro particular, se eleva el presente informe para su conocimiento y los fines que correspondan.`
+  },
+
+  mantenimiento: {
+    tipo: 'INFORME',
+    destinatario: 'Gerencia de TI / Dirección General\nSecretaría de Niñez, Adolescencia y Familia',
+    destinatario_cargo: 'A LA GERENCIA DE TI / DIRECCIÓN GENERAL',
+    destinatario_nombre: '',
+    asunto: 'Informe periódico de mantenimiento preventivo y verificación de infraestructura de servidores',
+    cuerpo: `1. INTRODUCCIÓN
+Se presenta el informe de mantenimiento preventivo programado y control de operatividad ejecutado sobre la infraestructura de servidores, enlaces de fibra óptica y sistemas de almacenamiento centralizado (NAS) del Departamento de Informática.
+
+2. DIAGNÓSTICO Y TAREAS REALIZADAS
+• Verificación de logs del sistema operativo y estado de salud de arreglos RAID.
+• Limpieza física de gabinetes de servidores, ventiladores y filtros de aire.
+• Aplicación de parches críticos de seguridad y actualización del motor de base de datos.
+• Comprobación y prueba de restauración de copias de seguridad (backups) automáticas.
+• Verificación de tensión y autonomía de los sistemas de alimentación ininterrumpida (UPS).
+
+3. CONCLUSIONES
+Todos los servicios se encuentran operando dentro de los parámetros de disponibilidad esperados, con óptimo rendimiento en la red interna de la Secretaría.
+
+Sin otro particular, se eleva el presente informe para su conocimiento y los fines que correspondan.`
+  },
+
+  impresoras: {
+    tipo: 'INFORME',
+    destinatario: 'Dirección General de Despacho\nSecretaría de Niñez, Adolescencia y Familia',
+    destinatario_cargo: 'A LA DIRECCIÓN GENERAL DE DESPACHO',
+    destinatario_nombre: '',
+    asunto: 'Estado de impresoras HP LaserJet P1005',
+    cuerpo: `1. OBJETO
+El presente informe tiene por objeto detallar el estado técnico y operativo de las impresoras marca HP modelo LaserJet P1005 asignadas a las distintas dependencias de esta Secretaría.
+
+2. REVISIÓN Y DIAGNÓSTICO
+Se procedió a la revisión técnica integral en el banco de pruebas del Departamento de Informática, constatando el estado de los componentes mecánicos, rodillos de tracción (pick-up rollers) y consumibles de tóner.
+
+3. CONCLUSIONES Y RECOMENDACIONES
+Se recomienda el mantenimiento preventivo y reemplazo de kits de mantenimiento en las unidades con desgaste para asegurar su continuidad operativa en los sectores administrativos.
+
+Sin otro particular, se eleva el presente informe para su conocimiento y los fines que correspondan.`
+  },
+
+  laptop: {
+    tipo: 'ACTA',
+    destinatario: 'Dirección de Recursos Humanos / Despacho de Niñez',
+    asunto: 'Acta de entrega y asignación de equipamiento portátil (Notebook)',
+    cuerpo: 'Recibí del Área de Informática los bienes que se detallan a continuación.-'
+  },
+
+  estabilizador: {
+    tipo: 'ACTA',
+    destinatario: 'Oficinas de Protección de Derechos (OPD) / CDI',
+    asunto: 'Acta de entrega de estabilizadores de tensión para protección de equipos',
+    cuerpo: 'Recibí del Área de Informática los bienes que se detallan a continuación.-'
+  },
+
+  prestamo_cpu: {
+    tipo: 'ACTA',
+    destinatario: 'Dirección de Administración / Secretaría de Niñez, Adolescencia y Familia',
+    asunto: 'Acta de entrega por préstamo de CPU en reparación',
+    cuerpo: 'Recibí del Área de Informática los bienes que se detallan a continuación.-'
+  }
+};
+
+function aplicarPreformato(key) {
+  if (!key || !PREFORMATOS[key]) return;
+  const p = PREFORMATOS[key];
+
+  // 1. Mantener tipo de documento coherente y conservar opción seleccionada
+  selectDocType(p.tipo, null, key);
+
+  // 2. Cargar asunto, destinatario y cuerpo
+  document.getElementById('id_asunto').value = p.asunto;
+  const destInput = document.getElementById('id_destinatario');
+  if (destInput) destInput.value = p.destinatario || '';
+  const cargoInput = document.getElementById('id_destinatario_cargo');
+  if (cargoInput) cargoInput.value = p.destinatario_cargo || '';
+  const nombreInput = document.getElementById('id_destinatario_nombre');
+  if (nombreInput) nombreInput.value = p.destinatario_nombre || '';
+  document.getElementById('id_cuerpo').value = p.cuerpo;
+  syncMarkdownToVisual();
+}
+
+function limpiarCampos() {
+  const select = document.getElementById('preformato-select');
+  if (select) select.value = '';
+  document.getElementById('id_asunto').value = '';
+  const destInput = document.getElementById('id_destinatario');
+  if (destInput) destInput.value = '';
+  const cargoInput = document.getElementById('id_destinatario_cargo');
+  if (cargoInput) cargoInput.value = '';
+  const nombreInput = document.getElementById('id_destinatario_nombre');
+  if (nombreInput) nombreInput.value = '';
+  const currentType = document.getElementById('id_tipo') ? document.getElementById('id_tipo').value : 'NOTA';
+  const remitenteInput = document.getElementById('id_remitente');
+  const userEmisor = "{{ nombre_emisor|default:''|escapejs }}";
+  if (currentType === 'ACTA') {
+    document.getElementById('id_cuerpo').value = 'Recibí del Área de Informática los bienes que se detallan a continuación.-';
+    if (remitenteInput) remitenteInput.value = userEmisor;
+  } else {
+    document.getElementById('id_cuerpo').value = '';
+    if (remitenteInput) remitenteInput.value = 'Área de Informática';
+  }
+  syncMarkdownToVisual();
+}
+
+// Inicializar visibilidad de acta y preformatos según tipo al cargar la página
+window.addEventListener('DOMContentLoaded', () => {
+  const currentType = document.getElementById('id_tipo') ? document.getElementById('id_tipo').value : 'NOTA';
+  const initialPlantilla = "{{ plantilla_seleccionada|default:'' }}";
+  selectDocType(currentType, null, initialPlantilla);
+  syncMarkdownToVisual();
+});
+
+// ─── EDITOR VISUAL WYSIWYG Y MANEJO DE TABLAS ────────────────────────────────
+let editorMode = 'visual'; // 'visual' o 'code'
+let activeTable = null;
+let activeCell = null;
+
+function escapeHtml(text) {
+  return (text || '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+
+function inlineMdToHtml(text) {
+  let s = escapeHtml(text);
+  s = s.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+  s = s.replace(/(?<!\*)\*(?!\s)([^*]+?)(?<!\s)\*(?!\*)/g, '<em>$1</em>');
+  s = s.replace(/&lt;u&gt;(.+?)&lt;\/u&gt;/gi, '<u>$1</u>');
+  s = s.replace(/~~(.+?)~~/g, '<s>$1</s>');
+  return s;
+}
+
+function parseMarkdownTable(lines, startIndex) {
+  const headerLine = lines[startIndex].trim();
+  const sepLine = lines[startIndex + 1].trim();
+
+  const parseRow = (line) => {
+    let clean = line.trim();
+    if (clean.startsWith('|')) clean = clean.substring(1);
+    if (clean.endsWith('|')) clean = clean.substring(0, clean.length - 1);
+    return clean.split('|').map(c => c.trim().replace(/\\\|/g, '|'));
+  };
+
+  const headers = parseRow(headerLine);
+  let i = startIndex + 2;
+  const rows = [];
+  while (i < lines.length && lines[i].trim().includes('|')) {
+    rows.push(parseRow(lines[i].trim()));
+    i++;
+  }
+
+  let html = '<table class="visual-doc-table"><thead><tr>';
+  headers.forEach(h => {
+    html += `<th contenteditable="true">${inlineMdToHtml(h)}</th>`;
+  });
+  html += '</tr></thead><tbody>';
+
+  rows.forEach(r => {
+    html += '<tr>';
+    for (let c = 0; c < headers.length; c++) {
+      const val = r[c] !== undefined ? r[c] : '';
+      html += `<td contenteditable="true">${inlineMdToHtml(val)}</td>`;
+    }
+    html += '</tr>';
+  });
+  html += '</tbody></table>';
+
+  return { html, nextIndex: i };
+}
+
+function markdownToVisualHtml(md) {
+  if (!md || !md.trim()) return '<p><br></p>';
+  const lines = md.split(/\r?\n/);
+  const out = [];
+  let i = 0;
+
+  while (i < lines.length) {
+    const line = lines[i];
+    const trimmed = line.trim();
+
+    if (!trimmed) {
+      i++;
+      continue;
+    }
+
+    // 1. Detección de Tabla Markdown
+    if (trimmed.includes('|') && i + 1 < lines.length && /^\|?\s*:?-+:?\s*(\|?\s*:?-+:?\s*)+\|?$/.test(lines[i + 1].trim())) {
+      const res = parseMarkdownTable(lines, i);
+      out.push(res.html);
+      i = res.nextIndex;
+      continue;
+    }
+
+    // 2. Detección de Bloques de Imagen
+    const mImg = trimmed.match(/^\[IMAGEN:\s*([^|\]]+)(?:\s*\|\s*([^\]]+))?\]$/i);
+    const mImgMd = trimmed.match(/^!\[(.*?)\]\((.*?)\)$/);
+    if (mImg || mImgMd) {
+      let url = '', cap = '';
+      if (mImg) {
+        url = mImg[1].trim();
+        cap = (mImg[2] || '').trim();
+      } else {
+        cap = (mImgMd[1] || '').trim();
+        url = mImgMd[2].trim();
+      }
+      out.push(`<div class="visual-doc-img-wrapper" data-img-url="${escapeHtml(url)}" data-caption="${escapeHtml(cap)}" contenteditable="false"><button type="button" class="btn-remove-img" onclick="this.closest('.visual-doc-img-wrapper').remove(); syncVisualToMarkdown();" title="Eliminar imagen">&times;</button><img src="${escapeHtml(url)}" alt="${escapeHtml(cap)}"><div class="caption-text">${escapeHtml(cap)}</div></div>`);
+      i++;
+      continue;
+    }
+
+    // 3. Listas no ordenadas (viñetas)
+    if (/^[•●▪◦*-]\s+(.+)$/.test(trimmed)) {
+      let listHtml = '<ul>';
+      while (i < lines.length && /^[•●▪◦*-]\s+(.+)$/.test(lines[i].trim())) {
+        const itemText = lines[i].trim().replace(/^[•●▪◦*-]\s+/, '');
+        listHtml += `<li>${inlineMdToHtml(itemText)}</li>`;
+        i++;
+      }
+      listHtml += '</ul>';
+      out.push(listHtml);
+      continue;
+    }
+
+    // 4. Listas numeradas
+    if (/^\d+\.\s+(.+)$/.test(trimmed)) {
+      let listHtml = '<ol>';
+      while (i < lines.length && /^\d+\.\s+(.+)$/.test(lines[i].trim())) {
+        const itemText = lines[i].trim().replace(/^\d+\.\s+/, '');
+        listHtml += `<li>${inlineMdToHtml(itemText)}</li>`;
+        i++;
+      }
+      listHtml += '</ol>';
+      out.push(listHtml);
+      continue;
+    }
+
+    // 5. Párrafo común
+    out.push(`<p>${inlineMdToHtml(trimmed)}</p>`);
+    i++;
+  }
+
+  return out.join('\n');
+}
+
+function inlineNodeToMarkdown(node) {
+  if (!node) return '';
+  if (node.nodeType === Node.TEXT_NODE) {
+    return node.nodeValue;
+  }
+  if (node.nodeType === Node.ELEMENT_NODE) {
+    const tag = node.tagName.toUpperCase();
+    if (tag === 'BR') return '\n';
+
+    let inner = '';
+    node.childNodes.forEach(child => {
+      inner += inlineNodeToMarkdown(child);
+    });
+
+    if (tag === 'B' || tag === 'STRONG') {
+      inner = inner.trim();
+      return inner ? `**${inner}**` : '';
+    }
+    if (tag === 'I' || tag === 'EM') {
+      inner = inner.trim();
+      return inner ? `*${inner}*` : '';
+    }
+    if (tag === 'U') {
+      inner = inner.trim();
+      return inner ? `<u>${inner}</u>` : '';
+    }
+    if (tag === 'S' || tag === 'STRIKE' || tag === 'DEL') {
+      inner = inner.trim();
+      return inner ? `~~${inner}~~` : '';
+    }
+    return inner;
+  }
+  return '';
+}
+
+function visualToMarkdown() {
+  const visual = document.getElementById('editor-visual');
+  if (!visual) return '';
+
+  const blocks = [];
+  const children = Array.from(visual.childNodes);
+
+  children.forEach(node => {
+    if (node.nodeType === Node.TEXT_NODE) {
+      const txt = node.nodeValue.trim();
+      if (txt) blocks.push(txt);
+      return;
+    }
+    if (node.nodeType !== Node.ELEMENT_NODE) return;
+
+    const tag = node.tagName.toUpperCase();
+
+    // 1. Tabla (directa o dentro de contenedor)
+    const tableElem = tag === 'TABLE' ? node : node.querySelector('table');
+    if (tableElem) {
+      const headers = [];
+      const theadThs = tableElem.querySelectorAll('thead th, tr:first-child th');
+      if (theadThs.length > 0) {
+        theadThs.forEach(th => headers.push(inlineNodeToMarkdown(th).trim().replace(/\|/g, '\\|')));
+      } else {
+        const firstTrTds = tableElem.querySelectorAll('tr:first-child td');
+        firstTrTds.forEach(td => headers.push(inlineNodeToMarkdown(td).trim().replace(/\|/g, '\\|')));
+      }
+
+      if (headers.length > 0) {
+        const tableLines = [];
+        tableLines.push('| ' + headers.join(' | ') + ' |');
+        const aligns = headers.map(h => {
+          const hl = h.toLowerCase();
+          return (hl.includes('cant') || hl.includes('n°') || hl.includes('ítem') || hl.includes('item')) ? ':---:' : ':---';
+        });
+        tableLines.push('| ' + aligns.join(' | ') + ' |');
+
+        const trs = tableElem.querySelectorAll('tbody tr');
+        const rowsToProcess = trs.length > 0 ? trs : Array.from(tableElem.querySelectorAll('tr')).slice(1);
+        rowsToProcess.forEach(tr => {
+          const cells = Array.from(tr.querySelectorAll('td')).map(td => inlineNodeToMarkdown(td).trim().replace(/\|/g, '\\|'));
+          while (cells.length < headers.length) cells.push('');
+          tableLines.push('| ' + cells.slice(0, headers.length).join(' | ') + ' |');
+        });
+
+        blocks.push(tableLines.join('\n'));
+      }
+      return;
+    }
+
+    // 2. Tarjeta de Imagen (directa o contenida)
+    const imgElem = node.classList.contains('visual-doc-img-wrapper') ? node : node.querySelector('.visual-doc-img-wrapper');
+    if (imgElem) {
+      const url = imgElem.getAttribute('data-img-url') || '';
+      const caption = imgElem.getAttribute('data-caption') || '';
+      blocks.push(caption ? `[IMAGEN: ${url} | ${caption}]` : `[IMAGEN: ${url}]`);
+      return;
+    }
+
+    // 3. Viñetas
+    if (tag === 'UL') {
+      const lis = node.querySelectorAll('li');
+      const listLines = [];
+      lis.forEach(li => {
+        const text = inlineNodeToMarkdown(li).trim();
+        if (text) listLines.push(`• ${text}`);
+      });
+      if (listLines.length > 0) blocks.push(listLines.join('\n'));
+      return;
+    }
+
+    // 4. Lista numerada
+    if (tag === 'OL') {
+      const lis = node.querySelectorAll('li');
+      const listLines = [];
+      lis.forEach((li, idx) => {
+        const text = inlineNodeToMarkdown(li).trim();
+        if (text) listLines.push(`${idx + 1}. ${text}`);
+      });
+      if (listLines.length > 0) blocks.push(listLines.join('\n'));
+      return;
+    }
+
+    // 5. Párrafos o Divs
+    if (tag === 'P' || tag === 'DIV') {
+      const text = inlineNodeToMarkdown(node).trim();
+      if (text) blocks.push(text);
+      return;
+    }
+
+    const fallbackText = inlineNodeToMarkdown(node).trim();
+    if (fallbackText) blocks.push(fallbackText);
+  });
+
+  return blocks.join('\n\n');
+}
+
+function syncVisualToMarkdown() {
+  if (editorMode === 'visual') {
+    const textarea = document.getElementById('id_cuerpo');
+    if (textarea) {
+      textarea.value = visualToMarkdown();
+    }
+  }
+}
+
+function syncMarkdownToVisual() {
+  const textarea = document.getElementById('id_cuerpo');
+  const visual = document.getElementById('editor-visual');
+  if (textarea && visual) {
+    visual.innerHTML = markdownToVisualHtml(textarea.value);
+  }
+}
+
+function toggleEditorMode() {
+  const textarea = document.getElementById('id_cuerpo');
+  const visual = document.getElementById('editor-visual');
+  const btn = document.getElementById('btn-toggle-editor-mode');
+  const label = document.getElementById('label-toggle-editor-mode');
+  if (!textarea || !visual) return;
+
+  if (editorMode === 'visual') {
+    // Pasar a modo código Markdown
+    syncVisualToMarkdown();
+    editorMode = 'code';
+    visual.style.display = 'none';
+    textarea.style.display = 'block';
+    textarea.focus();
+    if (label) label.textContent = 'Modo Visual';
+    ocultarToolbarTabla();
+  } else {
+    // Pasar a modo visual
+    syncMarkdownToVisual();
+    editorMode = 'visual';
+    textarea.style.display = 'none';
+    visual.style.display = 'block';
+    visual.focus();
+    if (label) label.textContent = 'Ver Código';
+  }
+}
+
+function formatVisual(command) {
+  if (editorMode === 'code') {
+    if (command === 'bold') insertFormat('**', '**');
+    else if (command === 'italic') insertFormat('*', '*');
+    else if (command === 'underline') insertFormat('<u>', '</u>');
+    else if (command === 'strikeThrough') insertFormat('~~', '~~');
+    else if (command === 'insertUnorderedList') insertLinePrefix('• ');
+    else if (command === 'insertOrderedList') insertNumberedList();
+    return;
+  }
+
+  const visual = document.getElementById('editor-visual');
+  if (!visual) return;
+  visual.focus();
+  document.execCommand(command, false, null);
+  syncVisualToMarkdown();
+}
+
+// ─── Control Contextual de Tablas Visuales ──────────────────────────────────
+function mostrarToolbarTabla(table, cell) {
+  activeTable = table;
+  activeCell = cell;
+  const bar = document.getElementById('table-quick-actions-bar');
+  if (bar) bar.style.display = 'flex';
+}
+
+function ocultarToolbarTabla() {
+  activeTable = null;
+  activeCell = null;
+  const bar = document.getElementById('table-quick-actions-bar');
+  if (bar) bar.style.display = 'none';
+}
+
+function insertarTablaVisualPrompt() {
+  if (editorMode === 'code') {
+    insertTable();
+    return;
+  }
+  const filasStr = prompt('¿Cuántas filas de datos tendrá la tabla? (sin contar encabezado):', '3');
+  if (filasStr === null) return;
+  const colsStr = prompt('¿Cuántas columnas tendrá la tabla?:', '3');
+  if (colsStr === null) return;
+
+  const filas = Math.max(1, parseInt(filasStr) || 3);
+  const cols = Math.max(1, parseInt(colsStr) || 3);
+
+  insertarTablaVisual(filas, cols);
+}
+
+function insertarTablaVisual(numRows, numCols) {
+  const visual = document.getElementById('editor-visual');
+  if (!visual) return;
+
+  const table = document.createElement('table');
+  table.className = 'visual-doc-table';
+
+  const thead = document.createElement('thead');
+  const trHead = document.createElement('tr');
+  for (let c = 0; c < numCols; c++) {
+    const th = document.createElement('th');
+    th.contentEditable = 'true';
+    th.textContent = c === 0 ? 'Ítem' : (c === 1 ? 'Descripción' : `Columna ${c + 1}`);
+    trHead.appendChild(th);
+  }
+  thead.appendChild(trHead);
+  table.appendChild(thead);
+
+  const tbody = document.createElement('tbody');
+  for (let r = 0; r < numRows; r++) {
+    const tr = document.createElement('tr');
+    for (let c = 0; c < numCols; c++) {
+      const td = document.createElement('td');
+      td.contentEditable = 'true';
+      td.innerHTML = '<br>';
+      tr.appendChild(td);
+    }
+    tbody.appendChild(tr);
+  }
+  table.appendChild(tbody);
+
+  // Insertar en la posición del cursor si es posible, o al final
+  const sel = window.getSelection();
+  let inserted = false;
+  if (sel && sel.rangeCount > 0) {
+    const range = sel.getRangeAt(0);
+    if (visual.contains(range.commonAncestorContainer)) {
+      range.deleteContents();
+      range.insertNode(table);
+      const p = document.createElement('p');
+      p.innerHTML = '<br>';
+      if (table.nextSibling) {
+        table.parentNode.insertBefore(p, table.nextSibling);
+      } else {
+        table.parentNode.appendChild(p);
+      }
+      inserted = true;
+    }
+  }
+  if (!inserted) {
+    visual.appendChild(table);
+    const p = document.createElement('p');
+    p.innerHTML = '<br>';
+    visual.appendChild(p);
+  }
+
+  const firstTd = table.querySelector('tbody td') || table.querySelector('th');
+  if (firstTd) {
+    firstTd.focus();
+    mostrarToolbarTabla(table, firstTd);
+  }
+  syncVisualToMarkdown();
+}
+
+function agregarFilaTabla() {
+  if (!activeTable) return;
+  const tbody = activeTable.querySelector('tbody') || activeTable;
+  const thCount = activeTable.querySelectorAll('thead th').length || (tbody.querySelector('tr') ? tbody.querySelector('tr').children.length : 3);
+  
+  const newTr = document.createElement('tr');
+  for (let i = 0; i < thCount; i++) {
+    const td = document.createElement('td');
+    td.contentEditable = 'true';
+    td.innerHTML = '<br>';
+    newTr.appendChild(td);
+  }
+
+  if (activeCell) {
+    const currentTr = activeCell.closest('tr');
+    if (currentTr && currentTr.parentNode.tagName === 'TBODY') {
+      currentTr.parentNode.insertBefore(newTr, currentTr.nextSibling);
+    } else {
+      tbody.appendChild(newTr);
+    }
+  } else {
+    tbody.appendChild(newTr);
+  }
+  newTr.children[0].focus();
+  mostrarToolbarTabla(activeTable, newTr.children[0]);
+  syncVisualToMarkdown();
+}
+
+function eliminarFilaTabla() {
+  if (!activeTable || !activeCell) return;
+  const tr = activeCell.closest('tr');
+  if (!tr) return;
+  const tbody = activeTable.querySelector('tbody');
+  
+  if (tr.closest('thead')) {
+    alert('No se puede eliminar la fila de encabezados.');
+    return;
+  }
+  if (tbody && tbody.querySelectorAll('tr').length <= 1) {
+    if (confirm('¿Desea eliminar la tabla completa?')) {
+      eliminarTablaActual();
+    }
+    return;
+  }
+  const nextTr = tr.nextElementSibling || tr.previousElementSibling;
+  tr.remove();
+  if (nextTr && nextTr.children.length > 0) {
+    nextTr.children[0].focus();
+    mostrarToolbarTabla(activeTable, nextTr.children[0]);
+  } else {
+    ocultarToolbarTabla();
+  }
+  syncVisualToMarkdown();
+}
+
+function agregarColumnaTabla() {
+  if (!activeTable) return;
+  const theadTr = activeTable.querySelector('thead tr');
+  let colIndex = activeCell ? activeCell.cellIndex : -1;
+
+  if (theadTr) {
+    const th = document.createElement('th');
+    th.contentEditable = 'true';
+    th.textContent = 'Nueva Col.';
+    if (colIndex >= 0 && colIndex < theadTr.children.length) {
+      theadTr.insertBefore(th, theadTr.children[colIndex + 1]);
+    } else {
+      theadTr.appendChild(th);
+    }
+  }
+
+  const rows = activeTable.querySelectorAll('tbody tr');
+  rows.forEach(r => {
+    const td = document.createElement('td');
+    td.contentEditable = 'true';
+    td.innerHTML = '<br>';
+    if (colIndex >= 0 && colIndex < r.children.length) {
+      r.insertBefore(td, r.children[colIndex + 1]);
+    } else {
+      r.appendChild(td);
+    }
+  });
+
+  syncVisualToMarkdown();
+}
+
+function eliminarColumnaTabla() {
+  if (!activeTable || !activeCell) return;
+  const colIndex = activeCell.cellIndex;
+  if (colIndex === undefined || colIndex < 0) return;
+
+  const theadTr = activeTable.querySelector('thead tr');
+  const numCols = theadTr ? theadTr.children.length : (activeTable.querySelector('tr') ? activeTable.querySelector('tr').children.length : 1);
+  if (numCols <= 1) {
+    if (confirm('La tabla se quedaría sin columnas. ¿Desea eliminar la tabla completa?')) {
+      eliminarTablaActual();
+    }
+    return;
+  }
+
+  if (theadTr && theadTr.children[colIndex]) {
+    theadTr.children[colIndex].remove();
+  }
+
+  const rows = activeTable.querySelectorAll('tbody tr');
+  rows.forEach(r => {
+    if (r.children[colIndex]) {
+      r.children[colIndex].remove();
+    }
+  });
+
+  ocultarToolbarTabla();
+  syncVisualToMarkdown();
+}
+
+function eliminarTablaActual() {
+  if (!activeTable) return;
+  activeTable.remove();
+  ocultarToolbarTabla();
+  syncVisualToMarkdown();
+}
+
+// ─── Manejo de Pegado Inteligente desde Excel / Tabulaciones ────────────────
+function handleVisualPaste(e) {
+  const clipboardData = e.clipboardData || window.clipboardData;
+  if (!clipboardData) return;
+
+  const pastedText = clipboardData.getData('text/plain');
+  if (!pastedText) return;
+
+  if (pastedText.includes('\t') && (pastedText.includes('\n') || pastedText.includes('\r'))) {
+    e.preventDefault();
+    const rows = pastedText.trim().split(/\r?\n/).map(line => line.split('\t'));
+    if (rows.length === 0) return;
+
+    const table = document.createElement('table');
+    table.className = 'visual-doc-table';
+
+    const thead = document.createElement('thead');
+    const trHead = document.createElement('tr');
+    rows[0].forEach(cellText => {
+      const th = document.createElement('th');
+      th.contentEditable = 'true';
+      th.textContent = cellText.trim();
+      trHead.appendChild(th);
+    });
+    thead.appendChild(trHead);
+    table.appendChild(thead);
+
+    const tbody = document.createElement('tbody');
+    for (let r = 1; r < rows.length; r++) {
+      const tr = document.createElement('tr');
+      for (let c = 0; c < rows[0].length; c++) {
+        const td = document.createElement('td');
+        td.contentEditable = 'true';
+        td.textContent = (rows[r][c] || '').trim();
+        tr.appendChild(td);
+      }
+      tbody.appendChild(tr);
+    }
+    table.appendChild(tbody);
+
+    const sel = window.getSelection();
+    if (sel && sel.rangeCount > 0) {
+      const range = sel.getRangeAt(0);
+      range.deleteContents();
+      range.insertNode(table);
+      const p = document.createElement('p');
+      p.innerHTML = '<br>';
+      if (table.nextSibling) {
+        table.parentNode.insertBefore(p, table.nextSibling);
+      } else {
+        table.parentNode.appendChild(p);
+      }
+    } else {
+      document.getElementById('editor-visual').appendChild(table);
+    }
+    syncVisualToMarkdown();
+  }
+}
+
+// ─── Navegación por Teclado (Tabulación y Atajos) ────────────────────────────
+function handleVisualKeydown(e) {
+  if (e.key === 'Tab') {
+    const targetCell = e.target.closest('td, th');
+    if (targetCell && activeTable) {
+      e.preventDefault();
+      const allCells = Array.from(activeTable.querySelectorAll('th, td'));
+      const idx = allCells.indexOf(targetCell);
+      if (e.shiftKey) {
+        if (idx > 0) {
+          allCells[idx - 1].focus();
+        }
+      } else {
+        if (idx < allCells.length - 1) {
+          allCells[idx + 1].focus();
+        } else {
+          agregarFilaTabla();
+        }
+      }
+      return;
+    }
+  }
+
+  if ((e.ctrlKey || e.metaKey) && !e.altKey) {
+    const k = e.key.toLowerCase();
+    if (k === 'b') {
+      e.preventDefault();
+      formatVisual('bold');
+    } else if (k === 'i') {
+      e.preventDefault();
+      formatVisual('italic');
+    } else if (k === 'u') {
+      e.preventDefault();
+      formatVisual('underline');
+    }
+  }
+}
+
+// ─── Guardado de Selección en Modo Visual ─────────────────────────────────────
+let savedVisualRange = null;
+
+function saveVisualRange() {
+  const visual = document.getElementById('editor-visual');
+  const sel = window.getSelection();
+  if (sel && sel.rangeCount > 0 && visual) {
+    const range = sel.getRangeAt(0);
+    if (visual.contains(range.commonAncestorContainer)) {
+      savedVisualRange = range.cloneRange();
+    }
+  }
+}
+
+// Inicialización de Eventos del Editor Visual
+window.addEventListener('DOMContentLoaded', () => {
+  const visual = document.getElementById('editor-visual');
+  if (visual) {
+    visual.addEventListener('input', () => {
+      syncVisualToMarkdown();
+    });
+
+    visual.addEventListener('paste', handleVisualPaste);
+    visual.addEventListener('keydown', handleVisualKeydown);
+
+    visual.addEventListener('focusin', (e) => {
+      const cell = e.target.closest('td, th');
+      if (cell) {
+        const table = cell.closest('table');
+        if (table) mostrarToolbarTabla(table, cell);
+      }
+    });
+
+    visual.addEventListener('click', (e) => {
+      const cell = e.target.closest('td, th');
+      if (cell) {
+        const table = cell.closest('table');
+        if (table) mostrarToolbarTabla(table, cell);
+      } else if (!e.target.closest('#table-quick-actions-bar')) {
+        ocultarToolbarTabla();
+      }
+    });
+
+    ['mouseup', 'keyup'].forEach(evt => {
+      visual.addEventListener(evt, () => {
+        saveVisualRange();
+      });
+    });
+  }
+
+  const form = document.querySelector('form');
+  if (form) {
+    form.addEventListener('submit', () => {
+      syncVisualToMarkdown();
+    });
+  }
+});
+
+// Agregar ítems de acta dinámicamente
+const addBtn = document.getElementById('add-item-btn');
+const container = document.getElementById('formset-container');
+const totalForms = document.getElementById('id_items-TOTAL_FORMS');
+
+if (addBtn && container && totalForms) {
+  addBtn.addEventListener('click', function () {
+    const currentCount = parseInt(totalForms.value);
+    const firstItem = container.querySelector('.formset-item-card');
+    if (!firstItem) return;
+    const newItem = firstItem.cloneNode(true);
+    newItem.id = 'item-' + currentCount;
+
+    newItem.innerHTML = newItem.innerHTML.replace(/items-\d+/g, `items-${currentCount}`);
+    newItem.querySelectorAll('input:not([type=hidden]):not([type=checkbox]), select').forEach(el => {
+      if (el.type !== 'checkbox') el.value = el.tagName === 'SELECT' ? el.options[0].value : '';
+    });
+
+    // Restablecer estado de eliminación y número de ítem
+    const delCb = newItem.querySelector('input[type=checkbox]');
+    if (delCb) delCb.checked = false;
+    newItem.classList.remove('item-marked-deleted');
+
+    const badge = newItem.querySelector('.item-badge-number');
+    if (badge) {
+      badge.textContent = `Ítem #${currentCount + 1}`;
+    }
+
+    container.appendChild(newItem);
+    totalForms.value = currentCount + 1;
+  });
+}
+
+// Marcar visualmente ítems eliminados al tildar "Eliminar"
+document.addEventListener('change', function (e) {
+  if (e.target && e.target.matches('input[type="checkbox"][name$="-DELETE"]')) {
+    const card = e.target.closest('.formset-item-card');
+    if (card) {
+      card.classList.toggle('item-marked-deleted', e.target.checked);
+    }
+  }
+});
+
+// ─── Gestión de Archivos Adjuntos e Imágenes en Línea ─────────────────────────
+let uploadedFilesDT = new DataTransfer();
+
+function syncFileInput() {
+  const input = document.getElementById('file-upload-input');
+  if (input) {
+    input.files = uploadedFilesDT.files;
+  }
+}
+
+function updateEmptyAttachmentsMsg() {
+  const list = document.getElementById('attachment-file-list');
+  const emptyMsg = document.getElementById('no-attachments-msg');
+  if (!list || !emptyMsg) return;
+  const cards = list.querySelectorAll('.attachment-file-card:not([data-removed="true"])');
+  emptyMsg.style.display = cards.length === 0 ? 'flex' : 'none';
+}
+
+function handleFileSelect(input) {
+  if (!input.files || input.files.length === 0) return;
+  for (let i = 0; i < input.files.length; i++) {
+    uploadedFilesDT.items.add(input.files[i]);
+  }
+  syncFileInput();
+  renderNewAttachments();
+}
+
+function renderNewAttachments() {
+  const list = document.getElementById('attachment-file-list');
+  const emptyMsg = document.getElementById('no-attachments-msg');
+  if (!list) return;
+
+  // Remover tarjetas de archivos nuevos previos para volver a renderizar con índices actualizados
+  list.querySelectorAll('.attachment-file-card[data-new="true"]').forEach(el => el.remove());
+
+  for (let i = 0; i < uploadedFilesDT.files.length; i++) {
+    const file = uploadedFilesDT.files[i];
+    const sizeKB = (file.size / 1024).toFixed(1);
+    const sizeMB = (file.size / (1024 * 1024)).toFixed(1);
+    const sizeStr = file.size > 1024 * 1024 ? `${sizeMB} MB` : `${sizeKB} KB`;
+    const isImage = file.type.startsWith('image/');
+    const isPdf = file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf');
+
+    const card = document.createElement('div');
+    card.className = 'attachment-file-card';
+    card.setAttribute('data-new', 'true');
+    card.setAttribute('data-index', i);
+    card.innerHTML = `
+      <div class="file-info-left">
+        <div class="file-icon-box" style="${isImage ? 'background:#eff6ff;color:#2563eb;' : isPdf ? 'background:#fee2e2;color:#dc2626;' : 'background:#f1f5f9;color:#475569;'}">
+          ${isImage ? `
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>
+          ` : `
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline></svg>
+          `}
+        </div>
+        <div>
+          <div class="file-name-text">${file.name}</div>
+          <div class="file-size-text">${sizeStr} &bull; Para subir</div>
+        </div>
+      </div>
+      <div class="file-actions-right">
+        <span class="file-check-icon">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+        </span>
+        <button type="button" class="file-delete-btn" onclick="removeNewAttachment(${i})" title="Quitar archivo">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+        </button>
+      </div>
+    `;
+    list.appendChild(card);
+  }
+
+  updateEmptyAttachmentsMsg();
+}
+
+function removeNewAttachment(index) {
+  const newDT = new DataTransfer();
+  for (let i = 0; i < uploadedFilesDT.files.length; i++) {
+    if (i !== index) {
+      newDT.items.add(uploadedFilesDT.files[i]);
+    }
+  }
+  uploadedFilesDT = newDT;
+  syncFileInput();
+  renderNewAttachments();
+}
+
+// Marcar / desmarcar adjunto existente para eliminar
+function toggleEliminarAdjuntoExistente(adjId, btn) {
+  const chk = document.getElementById('chk-del-' + adjId);
+  const card = document.getElementById('adjunto-card-' + adjId);
+  if (!chk || !card) return;
+
+  chk.checked = !chk.checked;
+  if (chk.checked) {
+    card.style.opacity = '0.45';
+    card.style.textDecoration = 'line-through';
+    card.style.background = '#fef2f2';
+    btn.title = 'Deshacer eliminación';
+    btn.style.color = '#15803d';
+  } else {
+    card.style.opacity = '1';
+    card.style.textDecoration = 'none';
+    card.style.background = '';
+    btn.title = 'Marcar para eliminar';
+    btn.style.color = '';
+  }
+}
+
+// Subida e inserción de imagen directa en el editor de texto
+function triggerEditorImageUpload() {
+  saveVisualRange();
+  const input = document.getElementById('editor-image-file-input');
+  if (input) input.click();
+}
+
+function handleEditorImageUpload(input) {
+  if (!input.files || input.files.length === 0) return;
+  const file = input.files[0];
+
+  const formData = new FormData();
+  formData.append('imagen', file);
+  formData.append('csrfmiddlewaretoken', '{{ csrf_token }}');
+  {% if doc and doc.pk %}
+  formData.append('doc_id', '{{ doc.pk }}');
+  {% endif %}
+
+  const textarea = document.getElementById('id_cuerpo');
+  const start = textarea ? textarea.selectionStart : 0;
+  const end = textarea ? textarea.selectionEnd : 0;
+  const currentText = textarea ? textarea.value : '';
+
+  // Feedback temporal
+  const origPlaceholder = textarea ? textarea.placeholder : '';
+  if (textarea) textarea.placeholder = 'Subiendo imagen al servidor...';
+  const imgLabel = document.getElementById('btn-insert-img-label');
+  const origImgLabel = imgLabel ? imgLabel.textContent : '';
+  if (imgLabel) imgLabel.textContent = 'Subiendo...';
+
+  fetch("{% url 'subir_imagen_editor' %}", {
+    method: 'POST',
+    body: formData,
+    headers: {
+      'X-Requested-With': 'XMLHttpRequest',
+    }
+  })
+  .then(res => res.json())
+  .then(data => {
+    if (data.success) {
+      // Guardar id en campo oculto para vincular al guardar el documento
+      const hiddenIds = document.getElementById('id_adjuntos_ids');
+      if (hiddenIds) {
+        hiddenIds.value = hiddenIds.value ? (hiddenIds.value + ',' + data.id) : data.id;
+      }
+
+      if (editorMode === 'visual') {
+        const visual = document.getElementById('editor-visual');
+        const imgDiv = document.createElement('div');
+        imgDiv.className = 'visual-doc-img-wrapper';
+        imgDiv.setAttribute('data-img-url', data.url);
+        imgDiv.setAttribute('data-caption', data.nombre || '');
+        imgDiv.contentEditable = 'false';
+        imgDiv.innerHTML = `
+          <button type="button" class="btn-remove-img" onclick="this.closest('.visual-doc-img-wrapper').remove(); syncVisualToMarkdown();" title="Eliminar imagen">&times;</button>
+          <img src="${data.url}" alt="${escapeHtml(data.nombre || '')}">
+          <div class="caption-text">${escapeHtml(data.nombre || '')}</div>
+        `;
+
+        let inserted = false;
+        if (savedVisualRange && visual.contains(savedVisualRange.commonAncestorContainer)) {
+          savedVisualRange.deleteContents();
+          savedVisualRange.insertNode(imgDiv);
+          const p = document.createElement('p');
+          p.innerHTML = '<br>';
+          if (imgDiv.nextSibling) {
+            imgDiv.parentNode.insertBefore(p, imgDiv.nextSibling);
+          } else {
+            imgDiv.parentNode.appendChild(p);
+          }
+          inserted = true;
+        } else {
+          const sel = window.getSelection();
+          if (sel && sel.rangeCount > 0 && visual.contains(sel.getRangeAt(0).commonAncestorContainer)) {
+            const range = sel.getRangeAt(0);
+            range.deleteContents();
+            range.insertNode(imgDiv);
+            const p = document.createElement('p');
+            p.innerHTML = '<br>';
+            if (imgDiv.nextSibling) {
+              imgDiv.parentNode.insertBefore(p, imgDiv.nextSibling);
+            } else {
+              imgDiv.parentNode.appendChild(p);
+            }
+            inserted = true;
+          }
+        }
+
+        if (!inserted) {
+          visual.appendChild(imgDiv);
+          const p = document.createElement('p');
+          p.innerHTML = '<br>';
+          visual.appendChild(p);
+        }
+
+        syncVisualToMarkdown();
+      } else {
+        // Modo Código / Markdown directo
+        const before = currentText.substring(0, start);
+        const after = currentText.substring(end);
+        const needPre = before.length > 0 && !before.endsWith('\n');
+        const needPost = after.length > 0 && !after.startsWith('\n');
+        const tagWithNewlines = (needPre ? '\n\n' : '') + data.tag + (needPost ? '\n\n' : '\n');
+
+        textarea.value = before + tagWithNewlines + after;
+        textarea.focus();
+        const newPos = start + tagWithNewlines.length;
+        textarea.setSelectionRange(newPos, newPos);
+      }
+
+      // Agregar a la lista de adjuntos visibles abajo
+      const list = document.getElementById('attachment-file-list');
+      const emptyMsg = document.getElementById('no-attachments-msg');
+      if (emptyMsg) emptyMsg.style.display = 'none';
+
+      const card = document.createElement('div');
+      card.className = 'attachment-file-card';
+      card.innerHTML = `
+        <div class="file-info-left">
+          <div class="file-icon-box" style="background:#eff6ff;color:#2563eb;">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>
+          </div>
+          <div>
+            <a href="${data.url}" target="_blank" class="file-name-text" style="color:var(--text-color);text-decoration:none;" title="Ver imagen">${data.nombre}</a>
+            <div class="file-size-text" style="color:#2563eb;font-weight:600;">Incrustada en cuerpo &bull; Guardada</div>
+          </div>
+        </div>
+        <div class="file-actions-right">
+          <span class="file-check-icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+          </span>
+        </div>
+      `;
+      list.appendChild(card);
+    } else {
+      alert('Error al subir imagen: ' + (data.error || 'No se pudo procesar el archivo.'));
+    }
+  })
+  .catch(err => {
+    alert('Error al conectar con el servidor.');
+  })
+  .finally(() => {
+    if (textarea) textarea.placeholder = origPlaceholder;
+    if (imgLabel) imgLabel.textContent = origImgLabel;
+    input.value = '';
+  });
+}
+
+// Drag & Drop en la zona de archivos
+const dropzone = document.querySelector('.attachment-dropzone');
+if (dropzone) {
+  ['dragenter', 'dragover'].forEach(eventName => {
+    dropzone.addEventListener(eventName, (e) => {
+      e.preventDefault();
+      dropzone.style.borderColor = 'var(--primary)';
+      dropzone.style.background = '#eff6ff';
+    });
+  });
+  ['dragleave', 'drop'].forEach(eventName => {
+    dropzone.addEventListener(eventName, (e) => {
+      e.preventDefault();
+      dropzone.style.borderColor = '#cbd5e1';
+      dropzone.style.background = '#f8fafc';
+    });
+  });
+  dropzone.addEventListener('drop', (e) => {
+    const dt = e.dataTransfer;
+    if (dt && dt.files && dt.files.length > 0) {
+      for (let i = 0; i < dt.files.length; i++) {
+        uploadedFilesDT.items.add(dt.files[i]);
+      }
+      syncFileInput();
+      renderNewAttachments();
+    }
+  });
+}
+
+// Spinner de carga al enviar el formulario
+const docForm = document.getElementById('doc-form');
+if (docForm) {
+  docForm.addEventListener('submit', function(e) {
+    const submitter = e.submitter;
+    const isBorrador = submitter && submitter.value === 'borrador';
+    const tipo = document.getElementById('id_tipo') ? document.getElementById('id_tipo').value : 'Documento';
+    const nombres = { 'NOTA': 'Nota Oficial', 'INFORME': 'Informe Técnico', 'ACTA': 'Acta de Entrega' };
+    const nombreTipo = nombres[tipo] || 'Documento';
+
+    if (window.mostrarSpinnerCarga) {
+      if (isBorrador) {
+        window.mostrarSpinnerCarga(
+          'Guardando Borrador...',
+          `Almacenando el borrador de ${nombreTipo}. Por favor espere.`
+        );
+      } else {
+        window.mostrarSpinnerCarga(
+          `Generando ${nombreTipo}...`,
+          'Asignando correlativo definitivo, compilando adjuntos y emitiendo el documento. Por favor espere.'
+        );
+      }
+    }
+  });
+}
+</script>
+
+
+{% endblock %}

@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>{{ doc.numero }}</title>
+  <style>
+    @page {
+      size: A4 portrait;
+      margin: 0;
+      @frame original_frame {
+        -pdf-frame-content: original_box;
+        left: 45pt;
+        top: 16pt;
+        width: 505pt;
+        height: 388pt;
+      }
+      @frame corte_frame {
+        -pdf-frame-content: corte_box;
+        left: 45pt;
+        top: 410pt;
+        width: 505pt;
+        height: 20pt;
+      }
+      @frame duplicado_frame {
+        -pdf-frame-content: duplicado_box;
+        left: 45pt;
+        top: 435pt;
+        width: 505pt;
+        height: 388pt;
+      }
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: Arial, Helvetica, sans-serif;
+      font-size: 9pt;
+      color: #000000;
+      line-height: 1.35;
+    }
+    .fecha-linea {
+      text-align: right;
+      font-size: 9pt;
+      margin-bottom: 5pt;
+      color: #000000;
+      text-transform: uppercase;
+    }
+    .titulo-copia {
+      text-align: center;
+      font-size: 11pt;
+      font-weight: bold;
+      letter-spacing: 1px;
+      margin-bottom: 5pt;
+      color: #000000;
+    }
+    .cuerpo-texto {
+      font-size: 9pt;
+      margin-bottom: 7pt;
+      color: #000000;
+      line-height: 1.35;
+    }
+    .tabla-items {
+      width: 100%;
+      margin-bottom: 10pt;
+    }
+    .tabla-items th, .tabla-items td {
+      border: 1px solid #000000;
+      padding: 3.5pt 5pt;
+      font-size: 8.5pt;
+      color: #000000;
+    }
+    .tabla-items th {
+      font-weight: bold;
+      text-align: center;
+    }
+    .col-unidad { width: 16%; text-align: center; }
+    .col-cant { width: 14%; text-align: center; }
+    .col-detalle { width: 70%; text-align: left; }
+    .linea-firma {
+      font-size: 8.5pt;
+      font-weight: bold;
+      color: #000000;
+      letter-spacing: 0.5px;
+    }
+    .linea-corte-contenedor {
+      text-align: center;
+    }
+    .linea-corte-dashed {
+      border-top: 1px dashed #777777;
+      width: 100%;
+      height: 1px;
+      margin-bottom: 2pt;
+    }
+    .linea-corte-texto {
+      font-size: 7.5pt;
+      color: #555555;
+      letter-spacing: 0.5px;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ══════════════════════════════════════════════════════════ -->
+  <!--               1. PARTE SUPERIOR: ORIGINAL                  -->
+  <!-- ══════════════════════════════════════════════════════════ -->
+  <div id="original_box">
+    <div style="text-align: right; margin-bottom: 4pt;">
+      <img src="{{ encabezado_uri }}" style="width: 280pt; height: 35pt;" />
+    </div>
+
+    <div class="fecha-linea">
+      SAN SALVADOR DE JUJUY, {{ doc.fecha.day }} de {{ doc.fecha|date:"F"|lower }} del {{ doc.fecha.year }}
+    </div>
+
+    <div class="titulo-copia">ORIGINAL</div>
+
+    {% if doc.destinatario %}
+      <div style="font-size: 8.5pt; font-weight: bold; margin-bottom: 5pt; color: #000000;">
+        DESTINO: <span style="font-weight: normal; text-transform: uppercase;">{{ doc.destinatario }}</span>
+      </div>
+    {% endif %}
+
+    <div class="cuerpo-texto">
+      {% if "FIRMA:" in doc.cuerpo or "AUTORIZA ENTREGA" in doc.cuerpo or "ORIGINAL" in doc.cuerpo or not doc.cuerpo %}
+        Recibí del Área de Informática los bienes que se detallan a continuación.-
+      {% else %}
+        {{ doc.cuerpo }}
+      {% endif %}
+    </div>
+
+    <!-- TABLA DE BIENES A ENTREGAR (ORIGINAL) -->
+    <table class="tabla-items" cellpadding="0" cellspacing="0">
+      <thead>
+        <tr>
+          <th class="col-unidad">Unidad</th>
+          <th class="col-cant">Cantidad</th>
+          <th class="col-detalle">Detalle</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% if items %}
+          {% for item in items %}
+            <tr>
+              <td class="col-unidad">Unidad</td>
+              <td class="col-cant">{{ item.cantidad|stringformat:"02d" }}</td>
+              <td class="col-detalle">
+                {{ item.descripcion }}{% if item.numero_serie %} — Nro serie: {{ item.numero_serie }}{% endif %}{% if item.codigo_inventario %} — Cód: {{ item.codigo_inventario }}{% endif %}{% if item.observaciones %} ({{ item.observaciones }}){% endif %}
+              </td>
+            </tr>
+          {% endfor %}
+        {% else %}
+          <tr>
+            <td class="col-unidad">Unidad</td>
+            <td class="col-cant">01</td>
+            <td class="col-detalle">{{ doc.asunto }}</td>
+          </tr>
+        {% endif %}
+      </tbody>
+    </table>
+
+    <!-- BLOQUE RECIBE CONFORME -->
+    <table cellpadding="0" cellspacing="0" style="margin-bottom: 20pt; margin-top: 4pt;">
+      <tr>
+        <td style="border: 1px solid #000000; padding: 2pt 5pt; font-weight: bold; font-size: 8.5pt;">
+          RECIBE CONFORME:
+        </td>
+      </tr>
+    </table>
+
+    <div class="linea-firma" style="margin-bottom: 3pt;">
+      FIRMA:................................
+    </div>
+    <div class="linea-firma" style="margin-bottom: 3pt;">
+      {% if doc.receptor_nombre or doc.receptor_dni %}
+        ACLARACION: {{ doc.receptor_nombre|default:"..........................................................." }} &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; DNI: {{ doc.receptor_dni|default:"..................................." }}
+      {% else %}
+        ACLARACION:...........................................................DNI...................................
+      {% endif %}
+    </div>
+    <div class="linea-firma" style="margin-bottom: 14pt;">
+      {% if doc.destinatario %}
+        DEPENDENCIA / SECTOR: <span style="font-weight: normal; text-transform: uppercase;">{{ doc.destinatario }}</span>
+      {% else %}
+        DEPENDENCIA / SECTOR: ........................................................................................
+      {% endif %}
+    </div>
+
+    <!-- BLOQUE AUTORIZA ENTREGA -->
+    <table cellpadding="0" cellspacing="0" style="width: 100%; margin-bottom: 24pt;">
+      <tr>
+        <td style="border: 1px solid #000000; padding: 2.5pt 5pt; font-weight: bold; font-size: 8.5pt;">
+          AUTORIZA ENTREGA: {{ doc.remitente|default:"Darío Joaquín Orquera" }}
+        </td>
+      </tr>
+    </table>
+
+    <div class="linea-firma">
+      FIRMA:................................
+    </div>
+  </div>
+
+
+  <!-- ══════════════════════════════════════════════════════════ -->
+  <!--             LÍNEA DIVISORIA / GUÍA DE CORTE               -->
+  <!-- ══════════════════════════════════════════════════════════ -->
+  <div id="corte_box" class="linea-corte-contenedor">
+    <div class="linea-corte-dashed"></div>
+    <div class="linea-corte-texto">- - - - - - - - - - - - - - - - - - - - Cortar por aquí (Original / Duplicado) - - - - - - - - - - - - - - - - - - - -</div>
+  </div>
+
+
+  <!-- ══════════════════════════════════════════════════════════ -->
+  <!--               2. PARTE INFERIOR: DUPLICADO                 -->
+  <!-- ══════════════════════════════════════════════════════════ -->
+  <div id="duplicado_box">
+    <div style="text-align: right; margin-bottom: 4pt;">
+      <img src="{{ encabezado_uri }}" style="width: 280pt; height: 35pt;" />
+    </div>
+
+    <div class="fecha-linea">
+      SAN SALVADOR DE JUJUY, {{ doc.fecha.day }} de {{ doc.fecha|date:"F"|lower }} del {{ doc.fecha.year }}
+    </div>
+
+    <div class="titulo-copia">DUPLICADO</div>
+
+    {% if doc.destinatario %}
+      <div style="font-size: 8.5pt; font-weight: bold; margin-bottom: 5pt; color: #000000;">
+        DESTINO: <span style="font-weight: normal; text-transform: uppercase;">{{ doc.destinatario }}</span>
+      </div>
+    {% endif %}
+
+    <div class="cuerpo-texto">
+      {% if "FIRMA:" in doc.cuerpo or "AUTORIZA ENTREGA" in doc.cuerpo or "ORIGINAL" in doc.cuerpo or not doc.cuerpo %}
+        Recibí del Área de Informática los bienes que se detallan a continuación.-
+      {% else %}
+        {{ doc.cuerpo }}
+      {% endif %}
+    </div>
+
+    <!-- TABLA DE BIENES A ENTREGAR (DUPLICADO) -->
+    <table class="tabla-items" cellpadding="0" cellspacing="0">
+      <thead>
+        <tr>
+          <th class="col-unidad">Unidad</th>
+          <th class="col-cant">Cantidad</th>
+          <th class="col-detalle">Detalle</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% if items %}
+          {% for item in items %}
+            <tr>
+              <td class="col-unidad">Unidad</td>
+              <td class="col-cant">{{ item.cantidad|stringformat:"02d" }}</td>
+              <td class="col-detalle">
+                {{ item.descripcion }}{% if item.numero_serie %} — Nro serie: {{ item.numero_serie }}{% endif %}{% if item.codigo_inventario %} — Cód: {{ item.codigo_inventario }}{% endif %}{% if item.observaciones %} ({{ item.observaciones }}){% endif %}
+              </td>
+            </tr>
+          {% endfor %}
+        {% else %}
+          <tr>
+            <td class="col-unidad">Unidad</td>
+            <td class="col-cant">01</td>
+            <td class="col-detalle">{{ doc.asunto }}</td>
+          </tr>
+        {% endif %}
+      </tbody>
+    </table>
+
+    <!-- BLOQUE RECIBE CONFORME -->
+    <table cellpadding="0" cellspacing="0" style="margin-bottom: 20pt; margin-top: 4pt;">
+      <tr>
+        <td style="border: 1px solid #000000; padding: 2pt 5pt; font-weight: bold; font-size: 8.5pt;">
+          RECIBE CONFORME:
+        </td>
+      </tr>
+    </table>
+
+    <div class="linea-firma" style="margin-bottom: 3pt;">
+      FIRMA:................................
+    </div>
+    <div class="linea-firma" style="margin-bottom: 3pt;">
+      {% if doc.receptor_nombre or doc.receptor_dni %}
+        ACLARACION: {{ doc.receptor_nombre|default:"..........................................................." }} &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; DNI: {{ doc.receptor_dni|default:"..................................." }}
+      {% else %}
+        ACLARACION:...........................................................DNI...................................
+      {% endif %}
+    </div>
+    <div class="linea-firma" style="margin-bottom: 14pt;">
+      {% if doc.destinatario %}
+        DEPENDENCIA / SECTOR: <span style="font-weight: normal; text-transform: uppercase;">{{ doc.destinatario }}</span>
+      {% else %}
+        DEPENDENCIA / SECTOR: ........................................................................................
+      {% endif %}
+    </div>
+
+    <!-- BLOQUE AUTORIZA ENTREGA -->
+    <table cellpadding="0" cellspacing="0" style="width: 100%; margin-bottom: 24pt;">
+      <tr>
+        <td style="border: 1px solid #000000; padding: 2.5pt 5pt; font-weight: bold; font-size: 8.5pt;">
+          AUTORIZA ENTREGA: {{ doc.remitente|default:"Darío Joaquín Orquera" }}
+        </td>
+      </tr>
+    </table>
+
+    <div class="linea-firma">
+      FIRMA:................................
+    </div>
+  </div>
+
+</body>
+</html>

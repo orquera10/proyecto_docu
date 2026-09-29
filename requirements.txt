@@ -1,0 +1,11 @@
+django>=6.0,<6.1
+gunicorn>=26.0
+whitenoise>=6.12
+opencv-python-headless>=4.8
+numpy>=1.26
+pillow>=11.0
+xhtml2pdf>=0.2.16
+reportlab>=4.0
+pypdf>=5.0
+python-docx>=1.1
+psycopg2-binary>=2.9

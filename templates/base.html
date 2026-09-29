@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}Docu – Gestión Documental{% endblock %}</title>
+  <meta name="description" content="Docu – Sistema de gestión y emisión de notas, informes y actas de entrega">
+  {% load static %}
+  <link rel="icon" type="image/svg+xml" href="{% static 'img/favicon.svg' %}">
+  <link rel="alternate icon" type="image/png" href="{% static 'img/favicon.png' %}">
+  <link rel="apple-touch-icon" href="{% static 'img/favicon.png' %}">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{% static 'css/main.css' %}">
+  {% block extra_head %}{% endblock %}
+</head>
+<body>
+
+  <!-- Sidebar Docu -->
+  <aside class="sidebar">
+    <!-- Header con Logotipo -->
+    <div class="sidebar-header">
+      <div class="brand-info-left">
+        <div class="brand-icon-box">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <ellipse cx="12" cy="5" rx="9" ry="3"></ellipse>
+            <path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"></path>
+            <path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"></path>
+          </svg>
+        </div>
+        <div class="brand-titles">
+          <span class="brand-name">Docu</span>
+          <span class="brand-subtitle">Gestión Documental</span>
+        </div>
+      </div>
+      <button type="button" class="btn-sidebar-close" id="btn-sidebar-close" aria-label="Cerrar menú">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="18" y1="6" x2="6" y2="18"></line>
+          <line x1="6" y1="6" x2="18" y2="18"></line>
+        </svg>
+      </button>
+    </div>
+
+    <!-- Navegación -->
+    <nav class="sidebar-nav">
+      <div class="sidebar-section-title">Navegación</div>
+      <a href="{% url 'dashboard' %}" class="nav-item {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}">
+        <span class="nav-item-icon">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="3" width="7" height="7"></rect>
+            <rect x="14" y="3" width="7" height="7"></rect>
+            <rect x="14" y="14" width="7" height="7"></rect>
+            <rect x="3" y="14" width="7" height="7"></rect>
+          </svg>
+        </span>
+        <span>Panel de Control</span>
+      </a>
+
+      <a href="{% url 'lista_documentos' %}" class="nav-item {% if request.resolver_match.url_name == 'lista_documentos' and not request.GET.tipo %}active{% endif %}">
+        <span class="nav-item-icon">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path>
+          </svg>
+        </span>
+        <span>Documentos</span>
+      </a>
+
+      <a href="{% url 'crear_documento' %}" class="nav-item {% if request.resolver_match.url_name == 'crear_documento' %}active{% endif %}">
+        <span class="nav-item-icon">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+            <polyline points="14 2 14 8 20 8"></polyline>
+            <line x1="12" y1="18" x2="12" y2="12"></line>
+            <line x1="9" y1="15" x2="15" y2="15"></line>
+          </svg>
+        </span>
+        <span>Nuevo Documento</span>
+      </a>
+
+      <!-- Mesa de Entrada / Notas Recibidas -->
+      <div class="sidebar-section-title" style="margin-top: 14px;">Mesa de Entrada</div>
+
+      <a href="{% url 'lista_notas_recibidas' %}" class="nav-item {% if 'recibidos' in request.path and request.resolver_match.url_name != 'crear_nota_recibida' %}active{% endif %}" style="display: flex; justify-content: space-between; align-items: center;">
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <span class="nav-item-icon" style="color: #6366f1;">
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
+              <polyline points="22,6 12,13 2,6"></polyline>
+            </svg>
+          </span>
+          <span>Notas Recibidas</span>
+        </div>
+        {% if conteo_recibidos_pendientes > 0 %}
+          <span class="badge" style="background:#fef3c7; color:#92400e; font-size:11px; padding:2px 7px; border-radius:10px; font-weight:700;" title="{{ conteo_recibidos_pendientes }} pendientes">{{ conteo_recibidos_pendientes }}</span>
+        {% else %}
+          <span class="category-count">{{ conteo_recibidos_total|default:"0" }}</span>
+        {% endif %}
+      </a>
+
+      <a href="{% url 'crear_nota_recibida' %}" class="nav-item {% if request.resolver_match.url_name == 'crear_nota_recibida' %}active{% endif %}">
+        <span class="nav-item-icon" style="color: #10b981;">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path>
+            <circle cx="12" cy="13" r="4"></circle>
+          </svg>
+        </span>
+        <span>Escanear / Ingresar</span>
+      </a>
+
+      <!-- Categorías con Conteo Dinámico -->
+      <div class="sidebar-section-title" style="margin-top: 14px;">Salidas / Emitidos</div>
+
+      <a href="{% url 'lista_documentos' %}?tipo=NOTA" class="category-item {% if request.GET.tipo == 'NOTA' %}active{% endif %}">
+        <div class="category-left">
+          <span class="cat-dot notas"></span>
+          <span>Notas</span>
+        </div>
+        <span class="category-count">{{ conteo_notas|default:"0" }}</span>
+      </a>
+
+      <a href="{% url 'lista_documentos' %}?tipo=INFORME" class="category-item {% if request.GET.tipo == 'INFORME' %}active{% endif %}">
+        <div class="category-left">
+          <span class="cat-dot informes"></span>
+          <span>Informes</span>
+        </div>
+        <span class="category-count">{{ conteo_informes|default:"0" }}</span>
+      </a>
+
+      <a href="{% url 'lista_documentos' %}?tipo=ACTA" class="category-item {% if request.GET.tipo == 'ACTA' %}active{% endif %}">
+        <div class="category-left">
+          <span class="cat-dot actas"></span>
+          <span>Actas de Entrega</span>
+        </div>
+        <span class="category-count">{{ conteo_actas|default:"0" }}</span>
+      </a>
+    </nav>
+
+    <!-- Perfil del Administrador TI en el Pie -->
+    <div class="sidebar-footer">
+      <div class="user-profile-card">
+        <div class="user-avatar-circle">
+          {{ nombre_usuario|first|upper }}
+        </div>
+        <div class="user-details">
+          <div class="user-name-text">{{ nombre_usuario }}</div>
+          <div class="user-role-text">{{ cargo_usuario|default:"Departamento Informática" }}</div>
+        </div>
+        <form method="post" action="{% url 'logout' %}" style="display:inline;">
+          {% csrf_token %}
+          <button type="submit" class="logout-icon-link" title="Cerrar Sesión" style="background:none;border:none;cursor:pointer;">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+              <polyline points="16 17 21 12 16 7"></polyline>
+              <line x1="21" y1="12" x2="9" y2="12"></line>
+            </svg>
+          </button>
+        </form>
+      </div>
+    </div>
+  </aside>
+  <div class="sidebar-backdrop" id="sidebar-backdrop" aria-hidden="true"></div>
+
+  <!-- Layout Principal -->
+  <div class="main-layout">
+    <!-- Topbar -->
+    <header class="topbar">
+      <div class="topbar-left">
+        <button type="button" class="btn-hamburger" id="btn-hamburger" aria-label="Abrir menú de navegación">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="3" y1="12" x2="21" y2="12"></line>
+            <line x1="3" y1="6" x2="21" y2="6"></line>
+            <line x1="3" y1="18" x2="21" y2="18"></line>
+          </svg>
+        </button>
+        <div class="topbar-titles-wrap">
+          <nav class="breadcrumb-nav">
+            <a href="{% url 'dashboard' %}">Docu</a>
+            {% block breadcrumbs %}
+              <span class="breadcrumb-separator">›</span>
+              <span class="breadcrumb-current">{% block current_section %}Inicio{% endblock %}</span>
+            {% endblock %}
+          </nav>
+          <h1 class="page-main-title">{% block page_title %}Panel de Control{% endblock %}</h1>
+        </div>
+      </div>
+
+      <div class="topbar-right">
+        <!-- Búsqueda en Topbar -->
+        <form action="{% url 'lista_documentos' %}" method="get" class="topbar-search-form">
+          <span class="search-input-icon">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="11" cy="11" r="8"></circle>
+              <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+            </svg>
+          </span>
+          <input
+            type="text"
+            name="q"
+            class="topbar-search-input"
+            placeholder="Buscar documentos..."
+            value="{{ busqueda|default:'' }}"
+          >
+        </form>
+
+        {% block topbar_actions %}{% endblock %}
+      </div>
+    </header>
+
+    <!-- Contenedor de la Página -->
+    <main class="page-container">
+      <!-- Mensajes Flash -->
+      {% if messages %}
+        {% for msg in messages %}
+          <div class="alert-box alert-{% if msg.tags == 'error' %}error{% elif msg.tags == 'success' %}success{% else %}info{% endif %}">
+            {% if msg.tags == 'success' %}
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
+            {% elif msg.tags == 'error' %}
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="15" y1="9" x2="9" y2="15"></line><line x1="9" y1="9" x2="15" y2="15"></line></svg>
+            {% else %}
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
+            {% endif %}
+            <span>{{ msg }}</span>
+          </div>
+        {% endfor %}
+      {% endif %}
+
+      {% block content %}{% endblock %}
+    </main>
+  <!-- Overlay Global de Carga / Spinner -->
+  <div id="global-loading-overlay" style="display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(15, 23, 42, 0.72); backdrop-filter: blur(5px); -webkit-backdrop-filter: blur(5px); z-index: 99999; align-items: center; justify-content: center;">
+    <div style="background: white; border-radius: 16px; padding: 34px 38px; max-width: 440px; width: 88%; text-align: center; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.3), 0 10px 10px -5px rgba(0,0,0,0.2); animation: popInSpinner 0.25s cubic-bezier(0.16, 1, 0.3, 1);">
+      <div style="position: relative; width: 64px; height: 64px; margin: 0 auto 20px auto;">
+        <div style="position: absolute; inset: 0; border: 4px solid #e2e8f0; border-radius: 50%;"></div>
+        <div style="position: absolute; inset: 0; border: 4px solid transparent; border-top-color: #2563eb; border-radius: 50%; animation: spin 0.8s linear infinite;"></div>
+        <div style="position: absolute; inset: 10px; border: 3px solid transparent; border-top-color: #38bdf8; border-radius: 50%; animation: spin 1.2s linear infinite reverse;"></div>
+      </div>
+      <h3 id="global-loading-title" style="margin: 0 0 10px 0; font-size: 17.5px; font-weight: 800; color: #0f172a;">
+        Generando Documento...
+      </h3>
+      <p id="global-loading-sub" style="margin: 0; font-size: 13.5px; color: #64748b; line-height: 1.5;">
+        Por favor espere un momento mientras se procesa la información.
+      </p>
+    </div>
+  </div>
+
+  <style>
+    @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    @keyframes popInSpinner { 0% { opacity: 0; transform: scale(0.92); } 100% { opacity: 1; transform: scale(1); } }
+  </style>
+
+  {% block extra_js %}{% endblock %}
+
+  <script>
+    window.mostrarSpinnerCarga = function(titulo, subtitulo) {
+      const overlay = document.getElementById('global-loading-overlay');
+      const elTitle = document.getElementById('global-loading-title');
+      const elSub = document.getElementById('global-loading-sub');
+      if (titulo && elTitle) elTitle.textContent = titulo;
+      if (subtitulo && elSub) elSub.textContent = subtitulo;
+      if (overlay) overlay.style.display = 'flex';
+    };
+    window.ocultarSpinnerCarga = function() {
+      const overlay = document.getElementById('global-loading-overlay');
+      if (overlay) overlay.style.display = 'none';
+    };
+
+    (function() {
+      const btnHamburger = document.getElementById('btn-hamburger');
+      const btnClose = document.getElementById('btn-sidebar-close');
+      const backdrop = document.getElementById('sidebar-backdrop');
+      const sidebar = document.querySelector('.sidebar');
+
+      function openSidebar() {
+        document.body.classList.add('sidebar-open');
+      }
+      function closeSidebar() {
+        document.body.classList.remove('sidebar-open');
+      }
+
+      if (btnHamburger) btnHamburger.addEventListener('click', openSidebar);
+      if (btnClose) btnClose.addEventListener('click', closeSidebar);
+      if (backdrop) backdrop.addEventListener('click', closeSidebar);
+
+      document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape' && document.body.classList.contains('sidebar-open')) {
+          closeSidebar();
+        }
+      });
+
+      if (sidebar) {
+        sidebar.querySelectorAll('a').forEach(function(link) {
+          link.addEventListener('click', function() {
+            if (window.innerWidth <= 900) {
+              closeSidebar();
+            }
+          });
+        });
+      }
+    })();
+  </script>
+</body>
+</html>

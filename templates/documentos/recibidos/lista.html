@@ -1,0 +1,381 @@
+{% extends 'base.html' %}
+{% block title %}Mesa de Entrada – Notas Recibidas – Docu IT{% endblock %}
+
+{% block breadcrumbs %}
+  <span class="breadcrumb-separator">›</span>
+  <span class="breadcrumb-current">Mesa de Entrada / Notas Recibidas</span>
+{% endblock %}
+
+{% block page_title %}Mesa de Entrada – Notas Recibidas{% endblock %}
+
+{% block topbar_actions %}
+  <a href="{% url 'crear_nota_recibida' %}" class="btn btn-primary" style="display: flex; align-items: center; gap: 8px;">
+    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path>
+      <circle cx="12" cy="13" r="4"></circle>
+    </svg>
+    <span>Escanear / Ingresar Nota</span>
+  </a>
+{% endblock %}
+
+{% block content %}
+
+<!-- Estadísticas Rápidas de Mesa de Entrada -->
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 20px;">
+  <div class="ui-card" style="padding: 16px; display: flex; align-items: center; gap: 14px; border-left: 4px solid var(--primary);">
+    <div style="width: 44px; height: 44px; border-radius: 10px; background: rgba(59, 130, 246, 0.1); color: var(--primary); display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+    </div>
+    <div>
+      <div style="font-size: 11px; text-transform: uppercase; font-weight: 700; color: var(--text-muted); letter-spacing: 0.5px;">Total Recibidas</div>
+      <div style="font-size: 22px; font-weight: 800; color: var(--text-main); margin-top: 2px;">{{ total_recibidas }}</div>
+    </div>
+  </div>
+
+  <div class="ui-card" style="padding: 16px; display: flex; align-items: center; gap: 14px; border-left: 4px solid #f59e0b;">
+    <div style="width: 44px; height: 44px; border-radius: 10px; background: rgba(245, 158, 11, 0.12); color: #d97706; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+    </div>
+    <div>
+      <div style="font-size: 11px; text-transform: uppercase; font-weight: 700; color: #b45309; letter-spacing: 0.5px;">Pendientes</div>
+      <div style="font-size: 22px; font-weight: 800; color: #b45309; margin-top: 2px;">{{ pendientes_count }}</div>
+    </div>
+  </div>
+
+  <div class="ui-card" style="padding: 16px; display: flex; align-items: center; gap: 14px; border-left: 4px solid #0284c7;">
+    <div style="width: 44px; height: 44px; border-radius: 10px; background: rgba(2, 132, 199, 0.12); color: #0284c7; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"></polyline><polyline points="1 20 1 14 7 14"></polyline><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg>
+    </div>
+    <div>
+      <div style="font-size: 11px; text-transform: uppercase; font-weight: 700; color: #0369a1; letter-spacing: 0.5px;">En Trámite</div>
+      <div style="font-size: 22px; font-weight: 800; color: #0369a1; margin-top: 2px;">{{ tramite_count }}</div>
+    </div>
+  </div>
+
+  <div class="ui-card" style="padding: 16px; display: flex; align-items: center; gap: 14px; border-left: 4px solid #10b981;">
+    <div style="width: 44px; height: 44px; border-radius: 10px; background: rgba(16, 185, 129, 0.12); color: #059669; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
+    </div>
+    <div>
+      <div style="font-size: 11px; text-transform: uppercase; font-weight: 700; color: #047857; letter-spacing: 0.5px;">Respondidas</div>
+      <div style="font-size: 22px; font-weight: 800; color: #047857; margin-top: 2px;">{{ respondidas_count }}</div>
+    </div>
+  </div>
+</div>
+
+<!-- Filtros de Búsqueda de Notas Recibidas (Compacto y Desplegable) -->
+<div class="ui-card filters-card {% if filtros_activos_count %}is-expanded{% endif %}" id="recibidos-filters-container">
+  <div class="filters-header" onclick="toggleRecibidosFiltros()" role="button" tabindex="0" aria-expanded="{% if filtros_activos_count %}true{% else %}false{% endif %}">
+    <div class="filters-title-left">
+      <div style="display: flex; align-items: center; gap: 8px;">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon>
+        </svg>
+        <span>Filtros de Búsqueda</span>
+      </div>
+
+      {% if filtros_activos_count %}
+        <span class="badge-active-filters">{{ filtros_activos_count }} activo{{ filtros_activos_count|pluralize }}</span>
+      {% endif %}
+
+      <!-- Resumen de filtros aplicados visible cuando está colapsado -->
+      <div class="filters-active-pills" id="pills-resumen-recibidos-filtros">
+        {% if q %}
+          <span class="filter-pill-tag">Búsqueda: "{{ q }}"</span>
+        {% endif %}
+        {% if estado_sel %}
+          <span class="filter-pill-tag">
+            Estado: 
+            {% if estado_sel == 'PENDIENTE' %}Pendiente
+            {% elif estado_sel == 'EN_TRAMITE' %}En Trámite
+            {% elif estado_sel == 'RESPONDIDO' %}Respondida
+            {% elif estado_sel == 'ARCHIVADO' %}Archivada
+            {% else %}{{ estado_sel }}{% endif %}
+          </span>
+        {% endif %}
+        {% if recibido_por_sel %}
+          {% for u in usuarios %}
+            {% if recibido_por_sel == u.pk|stringformat:"s" %}
+              <span class="filter-pill-tag">Receptor: {{ u.get_full_name|default:u.username }}</span>
+            {% endif %}
+          {% endfor %}
+        {% endif %}
+        {% if fecha_desde or fecha_hasta %}
+          <span class="filter-pill-tag">Fecha: {{ fecha_desde|default:"Inicio" }} al {{ fecha_hasta|default:"Hoy" }}</span>
+        {% endif %}
+      </div>
+    </div>
+
+    <div class="filters-header-right">
+      {% if q or estado_sel or recibido_por_sel or fecha_desde or fecha_hasta %}
+        <a href="{% url 'lista_notas_recibidas' %}" class="btn-clear-filters" onclick="event.stopPropagation();" title="Quitar todos los filtros aplicados">✕ Limpiar Filtros</a>
+      {% endif %}
+      <button type="button" class="btn-toggle-filters" id="btn-toggle-recibidos-filtros" title="Alternar filtros" onclick="event.stopPropagation(); toggleRecibidosFiltros();">
+        <span id="label-toggle-recibidos-filtros">{% if filtros_activos_count %}Ocultar filtros{% else %}Desplegar filtros{% endif %}</span>
+        <svg class="filters-chevron-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="6 9 12 15 18 9"></polyline>
+        </svg>
+      </button>
+    </div>
+  </div>
+
+  <div class="filters-collapse-content" id="recibidos-filters-content">
+    <form method="get" style="display: flex; flex-direction: column; gap: 14px; padding-top: 12px;">
+      <!-- Fila 1: Búsqueda rápida + Estado + Botones de Acción -->
+      <div style="display: flex; flex-wrap: wrap; gap: 14px; align-items: flex-end;">
+        <!-- Buscar texto -->
+        <div style="flex: 2; min-width: 260px;">
+          <label class="form-field-label" style="font-size: 11.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-muted); margin-bottom: 6px; display: block;">Buscar en Mesa de Entrada</label>
+          <div class="input-with-icon" style="position: relative;">
+            <span class="input-icon-left" style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--text-muted); pointer-events: none; display: flex; align-items: center;">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+            </span>
+            <input type="text" name="q" value="{{ q }}" class="form-input-styled" style="padding-left: 36px; height: 38px;" placeholder="Ej: REC-001, Defensoría, monitor, expediente...">
+          </div>
+        </div>
+
+        <!-- Estado -->
+        <div style="flex: 1; min-width: 180px;">
+          <label class="form-field-label" style="font-size: 11.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-muted); margin-bottom: 6px; display: block;">Estado de Gestión</label>
+          <select name="estado" class="form-input-styled" style="height: 38px;">
+            <option value="">Todos los Estados</option>
+            <option value="PENDIENTE" {% if estado_sel == 'PENDIENTE' %}selected{% endif %}>Pendiente de Revisión</option>
+            <option value="EN_TRAMITE" {% if estado_sel == 'EN_TRAMITE' %}selected{% endif %}>En Trámite</option>
+            <option value="RESPONDIDO" {% if estado_sel == 'RESPONDIDO' %}selected{% endif %}>Respondida</option>
+            <option value="ARCHIVADO" {% if estado_sel == 'ARCHIVADO' %}selected{% endif %}>Archivada</option>
+          </select>
+        </div>
+
+        <!-- Botones de Acción (Filtrar y Limpiar) -->
+        <div style="display: flex; gap: 8px; align-items: flex-end;">
+          <button type="submit" class="btn btn-primary" style="height: 38px; padding: 0 20px; display: inline-flex; align-items: center; gap: 6px; font-weight: 600; white-space: nowrap;">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon></svg>
+            <span>Filtrar</span>
+          </button>
+          {% if q or estado_sel or recibido_por_sel or fecha_desde or fecha_hasta %}
+            <a href="{% url 'lista_notas_recibidas' %}" class="btn btn-outline" style="height: 38px; padding: 0 14px; display: inline-flex; align-items: center; gap: 6px; white-space: nowrap;" title="Limpiar todos los filtros">
+              <span>✕ Limpiar</span>
+            </a>
+          {% endif %}
+        </div>
+      </div>
+
+      <!-- Fila 2: Filtros Complementarios (Personal receptor y Rango de Fechas) -->
+      <div style="display: flex; flex-wrap: wrap; gap: 14px; align-items: center; padding-top: 12px; border-top: 1px solid var(--border-subtle);">
+        <div style="display: flex; align-items: center; gap: 6px; font-size: 11.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-muted); margin-right: 4px;">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="4" y1="21" x2="4" y2="14"></line><line x1="4" y1="10" x2="4" y2="3"></line><line x1="12" y1="21" x2="12" y2="12"></line><line x1="12" y1="8" x2="12" y2="3"></line><line x1="20" y1="21" x2="20" y2="16"></line><line x1="20" y1="12" x2="20" y2="3"></line></svg>
+          <span>Más filtros:</span>
+        </div>
+
+        <!-- Recibido por -->
+        <div style="flex: 1; min-width: 200px;">
+          <select name="recibido_por" class="form-input-styled" style="height: 34px; font-size: 12.5px;">
+            <option value="">Receptor: Cualquier usuario</option>
+            {% for u in usuarios %}
+              <option value="{{ u.pk }}" {% if recibido_por_sel == u.pk|stringformat:"s" %}selected{% endif %}>
+                Receptor: {{ u.get_full_name|default:u.username }}
+              </option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <!-- Fecha Desde -->
+        <div style="display: flex; align-items: center; gap: 6px;">
+          <label style="font-size: 12px; font-weight: 500; color: var(--text-muted); white-space: nowrap;">Desde:</label>
+          <input type="date" name="fecha_desde" value="{{ fecha_desde }}" class="form-input-styled" style="height: 34px; font-size: 12.5px; width: 145px;">
+        </div>
+
+        <!-- Fecha Hasta -->
+        <div style="display: flex; align-items: center; gap: 6px;">
+          <label style="font-size: 12px; font-weight: 500; color: var(--text-muted); white-space: nowrap;">Hasta:</label>
+          <input type="date" name="fecha_hasta" value="{{ fecha_hasta }}" class="form-input-styled" style="height: 34px; font-size: 12.5px; width: 145px;">
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Tabla de Registros Recibidos -->
+<div class="table-card">
+  <div class="table-responsive">
+    <table class="sysdoc-table">
+      <thead>
+        <tr>
+          <th style="width: 170px; min-width: 150px; white-space: nowrap;">N° Registro</th>
+          <th style="width: 120px; min-width: 110px; white-space: nowrap;">Fecha</th>
+          <th style="width: 24%; min-width: 190px;">Remitente / Procedencia</th>
+          <th style="min-width: 250px;">Asunto / Motivo</th>
+          <th style="width: 140px; min-width: 120px; text-align: center; white-space: nowrap;">Estado</th>
+          <th style="width: 140px; min-width: 130px; text-align: right; white-space: nowrap;">Acciones</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for nota in page_obj %}
+          <tr style="cursor: pointer;" onclick="if(!event.target.closest('a, button')) window.location='{% url 'detalle_nota_recibida' nota.pk %}';">
+            <td style="white-space: nowrap;">
+              <div style="display: flex; align-items: center; gap: 8px;">
+                <a href="{% url 'detalle_nota_recibida' nota.pk %}" class="td-num-link" style="display: inline-flex; align-items: center; gap: 6px;">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline></svg>
+                  <span>{{ nota.numero_registro }}</span>
+                </a>
+                {% if nota.archivo_pdf %}
+                  <span class="badge" style="background: #eff6ff; color: #2563eb; border: 1px solid #bfdbfe; font-size: 10.5px; padding: 2px 6px; font-weight: 700; border-radius: 4px;" title="Documento PDF digitalizado adjunto">
+                    PDF
+                  </span>
+                {% endif %}
+              </div>
+            </td>
+            <td style="white-space: nowrap;">
+              <div style="font-weight: 600; color: var(--text-main);">{{ nota.fecha_recepcion|date:"d/m/Y" }}</div>
+            </td>
+            <td>
+              <div style="font-weight: 600; color: #1e3a8a; line-height: 1.35;" title="{{ nota.remitente_origen }}">
+                {{ nota.remitente_origen }}
+              </div>
+              {% if nota.numero_origen %}
+                <div style="font-size: 11.5px; color: var(--text-muted); margin-top: 3px;">
+                  Ref: <span style="font-weight: 600; color: #475569;">{{ nota.numero_origen }}</span>
+                </div>
+              {% endif %}
+            </td>
+            <td>
+              <div style="font-weight: 500; color: var(--text-main); line-height: 1.45;" title="{{ nota.asunto }}">
+                {{ nota.asunto }}
+              </div>
+              {% if nota.documento_respuesta %}
+                <div style="font-size: 11.5px; margin-top: 5px;">
+                  <a href="{% url 'detalle_documento' nota.documento_respuesta.pk %}" style="color: #059669; text-decoration: none; font-weight: 600; display: inline-flex; align-items: center; gap: 4px; background: #ecfdf5; border: 1px solid #a7f3d0; padding: 2px 8px; border-radius: 4px;">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 10 4 15 9 20"></polyline><path d="M20 4v7a4 4 0 0 1-4 4H4"></path></svg>
+                    <span>Resp: {{ nota.documento_respuesta.numero }}</span>
+                  </a>
+                </div>
+              {% endif %}
+            </td>
+            <td style="text-align: center; white-space: nowrap;">
+              <span class="badge {{ nota.badge_estado }}" style="border-width: 1px; border-style: solid; font-size: 11.5px; padding: 4px 10px; border-radius: 9999px; font-weight: 600;">
+                {{ nota.get_estado_display }}
+              </span>
+            </td>
+            <td style="text-align: right; white-space: nowrap;" onclick="event.stopPropagation();">
+              <div style="display: flex; gap: 6px; justify-content: flex-end;">
+                <a href="{% url 'detalle_nota_recibida' nota.pk %}" class="btn btn-outline btn-sm" style="padding: 4px 9px; font-size: 12px; height: 30px;" title="Ver Detalle y Visor PDF">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+                  <span>Ver</span>
+                </a>
+                <a href="{% url 'editar_nota_recibida' nota.pk %}" class="btn btn-outline btn-sm" style="padding: 4px 8px; height: 30px;" title="Editar Nota">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
+                </a>
+                <a href="{% url 'eliminar_nota_recibida' nota.pk %}" class="btn btn-outline btn-sm" style="padding: 4px 8px; height: 30px; color: #ef4444;" title="Eliminar Nota">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                </a>
+              </div>
+            </td>
+          </tr>
+        {% empty %}
+          <tr>
+            <td colspan="6" style="text-align: center; padding: 48px 20px;">
+              <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; color: var(--text-muted);">
+                <div style="width: 56px; height: 56px; border-radius: 50%; background: #f1f5f9; display: flex; align-items: center; justify-content: center; color: #94a3b8;">
+                  <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+                </div>
+                <div style="font-size: 15px; font-weight: 600; color: var(--text-main);">No se encontraron notas recibidas</div>
+                <p style="font-size: 13px; max-width: 400px; margin: 0;">No hay notas registradas con los filtros seleccionados o la mesa de entrada aún está vacía.</p>
+                <a href="{% url 'crear_nota_recibida' %}" class="btn btn-primary" style="margin-top: 8px;">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                  <span>Registrar la Primera Nota Recibida</span>
+                </a>
+              </div>
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Paginación Inferior -->
+  {% if page_obj.has_other_pages %}
+    <div class="table-pagination-footer">
+      <div class="pagination-info">
+        Mostrando página <strong>{{ page_obj.number }}</strong> de <strong>{{ page_obj.paginator.num_pages }}</strong> (Total: {{ page_obj.paginator.count }} notas)
+      </div>
+      <div class="pagination-controls">
+        {% if page_obj.has_previous %}
+          <a href="?page={{ page_obj.previous_page_number }}{% if q %}&q={{ q }}{% endif %}{% if estado_sel %}&estado={{ estado_sel }}{% endif %}{% if recibido_por_sel %}&recibido_por={{ recibido_por_sel }}{% endif %}{% if fecha_desde %}&fecha_desde={{ fecha_desde }}{% endif %}{% if fecha_hasta %}&fecha_hasta={{ fecha_hasta }}{% endif %}" class="btn-page">
+            Anterior
+          </a>
+        {% else %}
+          <span class="btn-page disabled">Anterior</span>
+        {% endif %}
+
+        {% if page_obj.has_next %}
+          <a href="?page={{ page_obj.next_page_number }}{% if q %}&q={{ q }}{% endif %}{% if estado_sel %}&estado={{ estado_sel }}{% endif %}{% if recibido_por_sel %}&recibido_por={{ recibido_por_sel }}{% endif %}{% if fecha_desde %}&fecha_desde={{ fecha_desde }}{% endif %}{% if fecha_hasta %}&fecha_hasta={{ fecha_hasta }}{% endif %}" class="btn-page">
+            Siguiente
+          </a>
+        {% else %}
+          <span class="btn-page disabled">Siguiente</span>
+        {% endif %}
+      </div>
+    </div>
+  {% endif %}
+</div>
+
+<script>
+function toggleRecibidosFiltros() {
+  const container = document.getElementById('recibidos-filters-container');
+  const label = document.getElementById('label-toggle-recibidos-filtros');
+  if (!container) return;
+  const isExp = container.classList.toggle('is-expanded');
+  if (label) {
+    label.textContent = isExp ? 'Ocultar filtros' : 'Desplegar filtros';
+  }
+  const header = container.querySelector('.filters-header');
+  if (header) {
+    header.setAttribute('aria-expanded', isExp ? 'true' : 'false');
+  }
+  try {
+    sessionStorage.setItem('docu_recibidos_filtros_expanded', isExp ? '1' : '0');
+  } catch (e) {}
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  const container = document.getElementById('recibidos-filters-container');
+  const label = document.getElementById('label-toggle-recibidos-filtros');
+  const header = container ? container.querySelector('.filters-header') : null;
+  if (!container) return;
+
+  // Soporte de accesibilidad por teclado en la cabecera
+  if (header) {
+    header.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        toggleRecibidosFiltros();
+      }
+    });
+  }
+
+  const activeCount = parseInt("{{ filtros_activos_count|default:'0' }}", 10);
+  let savedState = null;
+  try {
+    savedState = sessionStorage.getItem('docu_recibidos_filtros_expanded');
+  } catch (e) {}
+
+  let shouldExpand = false;
+  if (savedState !== null) {
+    shouldExpand = savedState === '1';
+  } else {
+    shouldExpand = activeCount > 0;
+  }
+
+  if (shouldExpand) {
+    container.classList.add('is-expanded');
+    if (label) label.textContent = 'Ocultar filtros';
+    if (header) header.setAttribute('aria-expanded', 'true');
+  } else {
+    container.classList.remove('is-expanded');
+    if (label) label.textContent = 'Desplegar filtros';
+    if (header) header.setAttribute('aria-expanded', 'false');
+  }
+});
+</script>
+
+{% endblock %}

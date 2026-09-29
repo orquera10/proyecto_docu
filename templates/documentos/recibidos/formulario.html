@@ -1,0 +1,413 @@
+{% extends 'base.html' %}
+{% block title %}{{ accion }} – Docu IT{% endblock %}
+
+{% block breadcrumbs %}
+  <span class="breadcrumb-separator">›</span>
+  <a href="{% url 'lista_notas_recibidas' %}" style="color: var(--text-muted); text-decoration: none;">Mesa de Entrada</a>
+  <span class="breadcrumb-separator">›</span>
+  <span class="breadcrumb-current">{{ accion }}</span>
+{% endblock %}
+
+{% block page_title %}{{ accion }}{% endblock %}
+
+{% block content %}
+
+<form method="post" id="recibido-form" enctype="multipart/form-data">
+  {% csrf_token %}
+
+  <div style="display: grid; grid-template-columns: 1fr; gap: 24px; max-width: 1100px; margin: 0 auto;">
+
+    <!-- Tarjeta Principal: Metadatos de Recepción -->
+    <div class="ui-card" style="padding: 24px;">
+      <div class="form-header-row" style="margin-bottom: 20px;">
+        <div class="form-header-titles">
+          <h3 style="font-size: 17px; font-weight: 700; color: var(--text-main); margin: 0 0 4px 0;">Datos de Recepción</h3>
+          <p style="font-size: 13px; color: var(--text-muted); margin: 0;">Registre el origen, fecha, destinatario interno y asunto de la nota recibida</p>
+        </div>
+        <div class="initial-status-tag">
+          <span style="font-size: 12px; font-weight: 600; color: var(--text-muted);">REGISTRO CORRELATIVO:</span>
+          <span class="badge" style="background:#eff6ff; color:#1d4ed8; font-weight:700; font-size:13px; border:1px solid #bfdbfe; padding:4px 10px;">
+            {% if modo == 'editar' %}{{ nota.numero_registro }}{% else %}{{ proximo_numero }}{% endif %}
+          </span>
+        </div>
+      </div>
+
+      <!-- Fila 1: Fechas y Horas -->
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; margin-bottom: 16px;">
+        <div class="form-field-group" style="margin: 0;">
+          <label class="form-field-label">Fecha de Recepción *</label>
+          <div class="input-with-icon">
+            <span class="input-icon-left">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+            </span>
+            <input type="date" name="fecha_recepcion" id="id_fecha_recepcion" class="form-input-styled" value="{{ form.fecha_recepcion.value|date:'Y-m-d'|default:form.fecha_recepcion.value }}" required>
+          </div>
+          {% if form.fecha_recepcion.errors %}<div style="color:#ef4444;font-size:12px;margin-top:4px;">{{ form.fecha_recepcion.errors }}</div>{% endif %}
+        </div>
+
+        <div class="form-field-group" style="margin: 0;">
+          <label class="form-field-label">Hora de Recepción</label>
+          <div class="input-with-icon">
+            <span class="input-icon-left">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+            </span>
+            <input type="time" name="hora_recepcion" id="id_hora_recepcion" class="form-input-styled" value="{{ form.hora_recepcion.value|time:'H:i'|default:form.hora_recepcion.value }}">
+          </div>
+          {% if form.hora_recepcion.errors %}<div style="color:#ef4444;font-size:12px;margin-top:4px;">{{ form.hora_recepcion.errors }}</div>{% endif %}
+        </div>
+
+        <div class="form-field-group" style="margin: 0;">
+          <label class="form-field-label">Recibido por (Personal TI) *</label>
+          <div class="input-with-icon">
+            <span class="input-icon-left">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+            </span>
+            <select name="recibido_por" id="id_recibido_por" class="form-input-styled" required>
+              {% for u in form.fields.recibido_por.queryset %}
+                <option value="{{ u.pk }}" {% if form.recibido_por.value == u.pk or form.initial.recibido_por.pk == u.pk or form.initial.recibido_por == u.pk %}selected{% endif %}>
+                  {{ u.get_full_name|default:u.username }}
+                </option>
+              {% endfor %}
+            </select>
+          </div>
+          {% if form.recibido_por.errors %}<div style="color:#ef4444;font-size:12px;margin-top:4px;">{{ form.recibido_por.errors }}</div>{% endif %}
+        </div>
+      </div>
+
+      <!-- Fila 2: Remitente y Número de Origen -->
+      <div class="recibido-form-grid-2-1" style="display: grid; grid-template-columns: 2fr 1fr; gap: 16px; margin-bottom: 16px;">
+        <div class="form-field-group" style="margin: 0;">
+          <label class="form-field-label">Remitente / Organismo de Origen *</label>
+          <div class="input-with-icon">
+            <span class="input-icon-left">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
+            </span>
+            <input type="text" name="remitente_origen" id="id_remitente_origen" class="form-input-styled" value="{{ form.remitente_origen.value|default:'' }}" placeholder="Ej: Dirección de Recursos Humanos / Defensoría de Niñez / Secretaría..." required>
+          </div>
+          {% if form.remitente_origen.errors %}<div style="color:#ef4444;font-size:12px;margin-top:4px;">{{ form.remitente_origen.errors }}</div>{% endif %}
+        </div>
+
+        <div class="form-field-group" style="margin: 0;">
+          <label class="form-field-label">N° Nota Externa / Ref.</label>
+          <div class="input-with-icon">
+            <span class="input-icon-left">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline></svg>
+            </span>
+            <input type="text" name="numero_origen" id="id_numero_origen" class="form-input-styled" value="{{ form.numero_origen.value|default:'' }}" placeholder="Ej: Nota N° 45/26">
+          </div>
+          {% if form.numero_origen.errors %}<div style="color:#ef4444;font-size:12px;margin-top:4px;">{{ form.numero_origen.errors }}</div>{% endif %}
+        </div>
+      </div>
+
+      <!-- Fila 3: Asunto -->
+      <div class="form-field-group" style="margin-bottom: 16px;">
+        <label class="form-field-label">Asunto / Motivo Principal *</label>
+        <div class="input-with-icon">
+          <span class="input-icon-left">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
+          </span>
+          <input type="text" name="asunto" id="id_asunto" class="form-input-styled" value="{{ form.asunto.value|default:'' }}" placeholder="Ej: Solicitud de reparación de computadora e instalación de impresora en Despacho" required>
+        </div>
+        {% if form.asunto.errors %}<div style="color:#ef4444;font-size:12px;margin-top:4px;">{{ form.asunto.errors }}</div>{% endif %}
+      </div>
+
+      <!-- Fila 4: Detalle / Contenido y Observaciones -->
+      <div class="recibido-form-grid-1-1" style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px;">
+        <div class="form-field-group" style="margin: 0;">
+          <label class="form-field-label">Detalle o Contenido de la Nota</label>
+          <textarea name="descripcion" id="id_descripcion" class="form-control" rows="3" placeholder="Síntesis o texto relevante de la nota recibida...">{{ form.descripcion.value|default:'' }}</textarea>
+          {% if form.descripcion.errors %}<div style="color:#ef4444;font-size:12px;margin-top:4px;">{{ form.descripcion.errors }}</div>{% endif %}
+        </div>
+
+        <div class="form-field-group" style="margin: 0;">
+          <label class="form-field-label">Observaciones Internas (TI)</label>
+          <textarea name="observaciones" id="id_observaciones" class="form-control" rows="3" placeholder="Notas internas para el equipo, derivación a técnico, etc...">{{ form.observaciones.value|default:'' }}</textarea>
+          {% if form.observaciones.errors %}<div style="color:#ef4444;font-size:12px;margin-top:4px;">{{ form.observaciones.errors }}</div>{% endif %}
+        </div>
+      </div>
+
+      <!-- Fila 5: Estado y Respuesta -->
+      <div class="recibido-form-grid-1-1" style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+        <div class="form-field-group" style="margin: 0;">
+          <label class="form-field-label">Estado de Gestión *</label>
+          <select name="estado" id="id_estado" class="form-input-styled">
+            {% for cod, desc in form.fields.estado.choices %}
+              <option value="{{ cod }}" {% if form.estado.value == cod %}selected{% endif %}>{{ desc }}</option>
+            {% endfor %}
+          </select>
+          {% if form.estado.errors %}<div style="color:#ef4444;font-size:12px;margin-top:4px;">{{ form.estado.errors }}</div>{% endif %}
+        </div>
+
+        <div class="form-field-group" style="margin: 0;">
+          <label class="form-field-label">Vincular con Documento de Respuesta (Salida)</label>
+          <select name="documento_respuesta" id="id_documento_respuesta" class="form-input-styled">
+            <option value="">-- Sin documento de respuesta vinculado --</option>
+            {% for doc in form.fields.documento_respuesta.queryset %}
+              <option value="{{ doc.pk }}" {% if form.documento_respuesta.value == doc.pk or form.initial.documento_respuesta.pk == doc.pk %}selected{% endif %}>
+                {{ doc.numero }} – {{ doc.asunto|truncatechars:45 }} ({{ doc.fecha|date:'d/m/Y' }})
+              </option>
+            {% endfor %}
+          </select>
+          <span style="font-size: 11px; color: var(--text-muted); margin-top: 4px; display: block;">Permite asociar una Nota o Informe que se emitió para dar respuesta a esta nota.</span>
+          {% if form.documento_respuesta.errors %}<div style="color:#ef4444;font-size:12px;margin-top:4px;">{{ form.documento_respuesta.errors }}</div>{% endif %}
+        </div>
+      </div>
+    </div>
+
+    <!-- Tarjeta de Digitalización y Escaneo Móvil -->
+    <div class="ui-card" style="padding: 24px; border: 2px dashed #93c5fd; background: #f8fafc;">
+      <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 16px; flex-wrap: wrap; gap: 12px;">
+        <div>
+          <h3 style="font-size: 16px; font-weight: 700; color: #1e3a8a; margin: 0 0 4px 0; display: flex; align-items: center; gap: 8px;">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path><circle cx="12" cy="13" r="4"></circle></svg>
+            <span>Digitalización: Escanear con Celular o Subir PDF</span>
+          </h3>
+          <p style="font-size: 12.5px; color: #475569; margin: 0;">
+            Puede sacar fotos directamente a cada página de la nota con el teléfono. El sistema las corregirá y compilará automáticamente en un PDF A4 limpio.
+          </p>
+        </div>
+      </div>
+
+      <!-- Opciones de Procesamiento Inteligente tipo CamScanner -->
+      <div style="background: #ffffff; border: 1px solid #cbd5e1; border-radius: 8px; padding: 14px 16px; margin-bottom: 16px; display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 14px; align-items: center;">
+        <div>
+          <label style="font-size: 12.5px; font-weight: 700; color: #1e3a8a; display: block; margin-bottom: 5px;">
+            🌟 Realce de Contraste e Iluminación (Estilo CamScanner)
+          </label>
+          <select name="filtro_escaneo" id="id_filtro_escaneo" class="form-input-styled" style="font-size: 13px; height: 38px;">
+            <option value="magic_color" selected>🌟 Color Mágico (Fondo blanco limpio, texto nítido, logos en color)</option>
+            <option value="escala_grises">📄 Escala de Grises Nítida (Sin sombras de fondo)</option>
+            <option value="blanco_negro">🖨️ Blanco y Negro Puro (Alto contraste)</option>
+            <option value="original">📷 Foto Original (Sin filtros)</option>
+          </select>
+        </div>
+        <div style="display: flex; align-items: center; gap: 10px; padding-top: 10px;">
+          <input type="checkbox" name="autocrop" id="id_autocrop" value="1" checked style="width: 18px; height: 18px; cursor: pointer; accent-color: #2563eb;">
+          <label for="id_autocrop" style="font-size: 13px; font-weight: 600; color: #334155; cursor: pointer; margin: 0;">
+            Detectar y recortar bordes de hoja automáticamente (Deskew)
+          </label>
+        </div>
+      </div>
+
+      <!-- Botones de Acción de Cámara y Carga -->
+      <div class="recibido-upload-buttons" style="display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 20px;">
+        <!-- Input de Cámara nativo para móviles -->
+        <input type="file" id="camera-input" name="imagenes_escaneo" accept="image/*" capture="environment" multiple style="display: none;" onchange="procesarImagenesSeleccionadas(this.files)">
+        <!-- Input de Fotos / Galería múltiple -->
+        <input type="file" id="gallery-input" name="imagenes_escaneo" accept="image/jpeg,image/png,image/webp" multiple style="display: none;" onchange="procesarImagenesSeleccionadas(this.files)">
+
+        <button type="button" class="btn btn-primary btn-camera-main" onclick="document.getElementById('camera-input').click();" style="display: flex; align-items: center; gap: 8px; background: #2563eb; padding: 10px 18px;">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path><circle cx="12" cy="13" r="4"></circle></svg>
+          <span style="font-weight: 700;">Tomar Foto / Escanear Página</span>
+        </button>
+
+        <button type="button" class="btn btn-outline" onclick="document.getElementById('gallery-input').click();" style="display: flex; align-items: center; gap: 8px; background: white; padding: 10px 16px;">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>
+          <span>Seleccionar Fotos de Galería</span>
+        </button>
+
+        <div class="recibido-direct-pdf" style="display: flex; align-items: center; gap: 8px; margin-left: auto;">
+          <span style="font-size: 12px; font-weight: 600; color: #64748b;">O subir PDF directo:</span>
+          <input type="file" name="archivo_pdf" id="id_archivo_pdf" accept=".pdf,application/pdf" style="font-size: 12px;">
+        </div>
+      </div>
+
+      <!-- Si está en modo editar y ya tiene PDF -->
+      {% if modo == 'editar' and nota.archivo_pdf %}
+        <div id="card-pdf-actual" style="background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 8px; padding: 12px 16px; margin-bottom: 20px; display: flex; align-items: center; justify-content: space-between; transition: all 0.2s ease;">
+          <div style="display: flex; align-items: center; gap: 10px;">
+            <svg id="icon-pdf-actual" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="12" y1="18" x2="12" y2="12"></line><line x1="9" y1="15" x2="15" y2="15"></line></svg>
+            <div>
+              <div id="titulo-pdf-actual" style="font-weight: 700; color: #1e3a8a; font-size: 13.5px;">Documento PDF Compilado Actual</div>
+              <div id="subtitulo-pdf-actual" style="font-size: 11.5px; color: #3b82f6;">{{ nota.archivo_pdf.name }}</div>
+            </div>
+          </div>
+          <div style="display: flex; gap: 8px; align-items: center;">
+            <a href="{% url 'descargar_pdf_nota_recibida' nota.pk %}" target="_blank" class="btn btn-outline btn-sm" id="btn-ver-pdf-actual" style="background: white;">
+              Ver PDF
+            </a>
+            <button type="button" class="btn btn-outline btn-sm" id="btn-quitar-pdf-actual" onclick="alternarQuitarPdf()" style="color: #ef4444; border-color: #fca5a5; background: white;" title="Sacar el documento PDF adjunto">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+              <span id="texto-btn-quitar">Quitar PDF</span>
+            </button>
+          </div>
+          <input type="hidden" name="eliminar_pdf_actual" id="id_eliminar_pdf_actual" value="0">
+        </div>
+      {% endif %}
+
+      <!-- Contenedor de Previsualización de Nuevas Páginas Escaneadas -->
+
+      <div id="contenedor-nuevas-paginas" style="display: none;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+          <div style="font-size: 13px; font-weight: 700; color: #1e293b; display: flex; align-items: center; gap: 6px;">
+            <span style="display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #10b981;"></span>
+            <span>Nuevas páginas capturadas para compilar (<span id="contador-paginas">0</span>):</span>
+          </div>
+          <button type="button" class="btn btn-outline btn-sm" onclick="limpiarTodasLasFotos()" style="color: #ef4444; border-color: #fca5a5;">
+            Descartar fotos
+          </button>
+        </div>
+        <div id="grid-paginas-preview" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 14px;">
+          <!-- Se inyectan dinámicamente con JS -->
+        </div>
+        <div style="margin-top: 14px; background: #ecfdf5; border: 1px solid #a7f3d0; border-radius: 6px; padding: 8px 12px; font-size: 12px; color: #065f46; display: flex; align-items: center; gap: 8px;">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
+          <span>Las imágenes se ensamblarán automáticamente en un PDF normalizado A4 con orientación correcta al guardar el formulario.</span>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Barra de Botones Inferior -->
+    <div class="recibido-form-actions" style="display: flex; justify-content: space-between; align-items: center; gap: 16px; padding-bottom: 40px;">
+      <a href="{% url 'lista_notas_recibidas' %}" class="btn btn-outline" style="padding: 10px 20px;">
+        Cancelar
+      </a>
+
+      <div style="display: flex; gap: 12px;">
+        <button type="submit" class="btn btn-primary" style="padding: 10px 28px; font-size: 14.5px; font-weight: 700; display: flex; align-items: center; gap: 8px;">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline><polyline points="7 3 7 8 15 8"></polyline></svg>
+          <span>{% if modo == 'editar' %}Guardar Cambios{% else %}Registrar y Compilar Nota{% endif %}</span>
+        </button>
+      </div>
+    </div>
+
+  </div>
+</form>
+
+<script>
+// Array global de archivos de fotos capturados
+let listaArchivos = [];
+
+function procesarImagenesSeleccionadas(files) {
+  if (!files || files.length === 0) return;
+
+  for (let i = 0; i < files.length; i++) {
+    listaArchivos.push(files[i]);
+  }
+  actualizarPreviewGrid();
+}
+
+function actualizarPreviewGrid() {
+  const contenedor = document.getElementById('contenedor-nuevas-paginas');
+  const grid = document.getElementById('grid-paginas-preview');
+  const contador = document.getElementById('contador-paginas');
+
+  if (listaArchivos.length === 0) {
+    contenedor.style.display = 'none';
+    grid.innerHTML = '';
+    return;
+  }
+
+  contenedor.style.display = 'block';
+  contador.textContent = listaArchivos.length;
+  grid.innerHTML = '';
+
+  listaArchivos.forEach((file, index) => {
+    const card = document.createElement('div');
+    card.style = 'background: white; border: 1px solid #cbd5e1; border-radius: 8px; padding: 8px; position: relative; display: flex; flex-direction: column; align-items: center; box-shadow: 0 1px 3px rgba(0,0,0,0.05);';
+
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      card.innerHTML = `
+        <div style="position: relative; width: 100%; height: 160px; overflow: hidden; border-radius: 6px; background: #f8fafc; display: flex; align-items: center; justify-content: center;">
+          <img src="${e.target.result}" style="width: 100%; height: 100%; object-fit: contain; border-radius: 4px;">
+          <button type="button" onclick="eliminarFoto(${index})" style="position: absolute; top: 4px; right: 4px; width: 24px; height: 24px; border-radius: 50%; background: rgba(239, 68, 68, 0.9); color: white; border: none; font-size: 14px; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; line-height: 1;" title="Quitar página">✕</button>
+          <span style="position: absolute; bottom: 4px; left: 4px; background: rgba(15, 23, 42, 0.75); color: white; font-size: 10.5px; font-weight: 700; padding: 2px 6px; border-radius: 4px;">Pág. ${index + 1}</span>
+        </div>
+        <div style="font-size: 11px; color: #64748b; margin-top: 6px; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+          ${file.name}
+        </div>
+      `;
+    };
+    reader.readAsDataURL(file);
+    grid.appendChild(card);
+  });
+}
+
+function eliminarFoto(index) {
+  listaArchivos.splice(index, 1);
+  actualizarPreviewGrid();
+}
+
+function limpiarTodasLasFotos() {
+  listaArchivos = [];
+  actualizarPreviewGrid();
+  document.getElementById('camera-input').value = '';
+  document.getElementById('gallery-input').value = '';
+}
+
+function alternarQuitarPdf() {
+  const inputDel = document.getElementById('id_eliminar_pdf_actual');
+  const card = document.getElementById('card-pdf-actual');
+  const titulo = document.getElementById('titulo-pdf-actual');
+  const subtitulo = document.getElementById('subtitulo-pdf-actual');
+  const btnQuitar = document.getElementById('btn-quitar-pdf-actual');
+  const btnVer = document.getElementById('btn-ver-pdf-actual');
+  const icon = document.getElementById('icon-pdf-actual');
+
+  if (!inputDel || !card) return;
+
+  if (inputDel.value === '0') {
+    inputDel.value = '1';
+    card.style.background = '#fef2f2';
+    card.style.borderColor = '#fca5a5';
+    if (titulo) {
+      titulo.textContent = '⚠️ PDF marcado para eliminar';
+      titulo.style.color = '#991b1b';
+    }
+    if (subtitulo) {
+      subtitulo.textContent = 'El archivo PDF adjunto se eliminará definitivamente al guardar los cambios.';
+      subtitulo.style.color = '#b91c1c';
+    }
+    const txt = document.getElementById('texto-btn-quitar');
+    if (txt) txt.textContent = 'Deshacer quitar';
+    btnQuitar.style.color = '#334155';
+    btnQuitar.style.borderColor = '#cbd5e1';
+    if (btnVer) btnVer.style.display = 'none';
+  } else {
+    inputDel.value = '0';
+    card.style.background = '#eff6ff';
+    card.style.borderColor = '#bfdbfe';
+    if (titulo) {
+      titulo.textContent = 'Documento PDF Compilado Actual';
+      titulo.style.color = '#1e3a8a';
+    }
+    if (subtitulo) {
+      subtitulo.textContent = '{{ nota.archivo_pdf.name|default:""|escapejs }}';
+      subtitulo.style.color = '#3b82f6';
+    }
+    const txt = document.getElementById('texto-btn-quitar');
+    if (txt) txt.textContent = 'Quitar PDF';
+    btnQuitar.style.color = '#ef4444';
+    btnQuitar.style.borderColor = '#fca5a5';
+    if (btnVer) btnVer.style.display = 'inline-flex';
+  }
+}
+
+// Al enviar el formulario, transferir los archivos acumulados a un DataTransfer si el navegador lo soporta
+document.getElementById('recibido-form').addEventListener('submit', function(e) {
+  if (listaArchivos.length > 0) {
+    const dataTransfer = new DataTransfer();
+    listaArchivos.forEach(file => dataTransfer.items.add(file));
+    // Asignar al input principal que viaja al servidor
+    document.getElementById('camera-input').files = dataTransfer.files;
+    if (window.mostrarSpinnerCarga) {
+      window.mostrarSpinnerCarga(
+        'Digitalizando y Generando PDF...',
+        `Procesando ${listaArchivos.length} página(s): aplicando auto-recorte inteligente, eliminación de fondo y filtro CamScanner. Por favor espere unos segundos.`
+      );
+    }
+  } else {
+    if (window.mostrarSpinnerCarga) {
+      window.mostrarSpinnerCarga(
+        'Guardando Nota Recibida...',
+        'Registrando la información en Mesa de Entrada. Por favor espere.'
+      );
+    }
+  }
+});
+
+</script>
+
+{% endblock %}
