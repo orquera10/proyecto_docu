@@ -151,7 +151,12 @@
           <span class="input-icon-left">
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
           </span>
-          <input type="text" name="destinatario" id="id_destinatario" class="form-input-styled" value="{{ form.destinatario.value|default:'' }}" placeholder="Ej: OPD Cuyaya / Dirección de Recursos Humanos">
+          <input type="text" name="destinatario" id="id_destinatario" class="form-input-styled" value="{{ form.destinatario.value|default:'' }}" placeholder="Ej: OPD Cuyaya / Dirección de Recursos Humanos" list="lista-sectores-destinatario" autocomplete="off">
+          <datalist id="lista-sectores-destinatario">
+            {% for sector in sectores_frecuentes %}
+              <option value="{{ sector }}"></option>
+            {% endfor %}
+          </datalist>
         </div>
         <span id="help_destinatario" style="font-size: 11px; color: var(--text-muted); margin-top: 4px; display: block;">Sector o dependencia al que pertenece la persona que recibe el equipamiento.</span>
         {% if form.destinatario.errors %}<div style="color:#ef4444;font-size:12px;margin-top:4px;">{{ form.destinatario.errors }}</div>{% endif %}
@@ -161,24 +166,40 @@
     <!-- Fila exclusiva para Notas e Informes: Cargo y Nombre del Destinatario -->
     <div id="seccion-destinatario-nota-informe" class="form-row-two-col" style="margin-top: 18px;">
       <div class="form-field-group">
-        <label class="form-field-label">Cargo / Organismo al que va dirigido</label>
+        <label class="form-field-label" style="display: flex; justify-content: space-between; align-items: center;">
+          <span>Cargo / Organismo al que va dirigido</span>
+          <span style="font-size: 11px; font-weight: 500; color: #6366f1;">Sugerencias disponibles ▾</span>
+        </label>
         <div class="input-with-icon">
           <span class="input-icon-left">
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
           </span>
-          <input type="text" name="destinatario_cargo" id="id_destinatario_cargo" class="form-input-styled" value="{{ form.destinatario_cargo.value|default:'' }}" placeholder="Ej: A LA SECRETARIA DE NIÑEZ, ADOLESCENCIA Y FAMILIA">
+          <input type="text" name="destinatario_cargo" id="id_destinatario_cargo" class="form-input-styled" value="{{ form.destinatario_cargo.value|default:'' }}" placeholder="Ej: A LA SECRETARIA DE NIÑEZ, ADOLESCENCIA Y FAMILIA" list="lista-cargos-destinatario" autocomplete="off">
+          <datalist id="lista-cargos-destinatario">
+            {% for cargo in cargos_frecuentes %}
+              <option value="{{ cargo }}"></option>
+            {% endfor %}
+          </datalist>
         </div>
-        <span style="font-size: 11px; color: var(--text-muted); margin-top: 4px; display: block;">Saldrá en la primera línea en mayúsculas y negrita.</span>
+        <span style="font-size: 11px; color: var(--text-muted); margin-top: 4px; display: block;">Saldrá en la primera línea en mayúsculas y negrita. Podés elegir uno existente o escribir uno nuevo.</span>
         {% if form.destinatario_cargo.errors %}<div style="color:#ef4444;font-size:12px;margin-top:4px;">{{ form.destinatario_cargo.errors }}</div>{% endif %}
       </div>
 
       <div class="form-field-group">
-        <label class="form-field-label">Nombre y Apellido de la Persona Destinataria</label>
+        <label class="form-field-label" style="display: flex; justify-content: space-between; align-items: center;">
+          <span>Nombre y Apellido de la Persona Destinataria</span>
+          <span style="font-size: 11px; font-weight: 500; color: #6366f1;">Sugerencias disponibles ▾</span>
+        </label>
         <div class="input-with-icon">
           <span class="input-icon-left">
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
           </span>
-          <input type="text" name="destinatario_nombre" id="id_destinatario_nombre" class="form-input-styled" value="{{ form.destinatario_nombre.value|default:'' }}" placeholder="Ej: Dra. Marta Iriarte">
+          <input type="text" name="destinatario_nombre" id="id_destinatario_nombre" class="form-input-styled" value="{{ form.destinatario_nombre.value|default:'' }}" placeholder="Ej: Dra. Marta Iriarte" list="lista-nombres-destinatario" autocomplete="off">
+          <datalist id="lista-nombres-destinatario">
+            {% for nombre in nombres_frecuentes %}
+              <option value="{{ nombre }}"></option>
+            {% endfor %}
+          </datalist>
         </div>
         <span style="font-size: 11px; color: var(--text-muted); margin-top: 4px; display: block;">Saldrá debajo del cargo en mayúsculas y negrita, seguido de SU DESPACHO.</span>
         {% if form.destinatario_nombre.errors %}<div style="color:#ef4444;font-size:12px;margin-top:4px;">{{ form.destinatario_nombre.errors }}</div>{% endif %}

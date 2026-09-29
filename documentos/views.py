@@ -392,11 +392,40 @@ def detalle_documento(request, pk):
     })
 
 
+def obtener_sugerencias_destinatarios():
+    """
+    Retorna listas únicas y ordenadas de cargos, nombres y sectores utilizados
+    en documentos anteriores para poblar datalists de autocompletado y desplegables.
+    """
+    cargos = set()
+    nombres = set()
+    sectores = set()
+
+    for doc in Documento.objects.only('destinatario_cargo', 'destinatario_nombre', 'destinatario').iterator():
+        c = doc.cargo_display
+        if c:
+            cargos.add(c)
+        n = doc.nombre_display
+        if n:
+            nombres.add(n)
+        if doc.destinatario:
+            sec = doc.destinatario.strip()
+            if sec and '\n' not in sec:
+                sectores.add(sec)
+
+    return {
+        'cargos_frecuentes': sorted(cargos),
+        'nombres_frecuentes': sorted(nombres),
+        'sectores_frecuentes': sorted(sectores),
+    }
+
+
 # ─── Crear documento ─────────────────────────────────────────────────────────
 
 @login_required
 def crear_documento(request):
     plantilla = request.GET.get('plantilla', '')
+    plantilla_doc_id = request.GET.get('plantilla_doc') or request.GET.get('clonar')
     nota_recibida_id = request.GET.get('nota_recibida_id') or request.POST.get('nota_recibida_id')
     nota_recibida = None
     if nota_recibida_id:
@@ -464,6 +493,8 @@ def crear_documento(request):
             'estado': 'BORRADOR',
         }
 
+        formset = ItemActaFormSet(prefix='items')
+
         if nota_recibida:
             initial_data['asunto'] = f"Respuesta a Nota {nota_recibida.numero_registro}: {nota_recibida.asunto}"
             initial_data['destinatario'] = nota_recibida.remitente_origen
@@ -472,8 +503,31 @@ def crear_documento(request):
         if tipo_param == 'ACTA':
             initial_data['cuerpo'] = 'Recibí del Área de Informática los bienes que se detallan a continuación.-'
 
+        # Cargar datos desde documento base como plantilla si se solicitó
+        if plantilla_doc_id and str(plantilla_doc_id).isdigit():
+            doc_base = Documento.objects.filter(pk=plantilla_doc_id).first()
+            if doc_base:
+                tipo_param = doc_base.tipo
+                initial_data.update({
+                    'tipo': doc_base.tipo,
+                    'asunto': doc_base.asunto,
+                    'remitente': doc_base.remitente or remitente_default,
+                    'destinatario': doc_base.destinatario,
+                    'destinatario_cargo': doc_base.destinatario_cargo or doc_base.cargo_display,
+                    'destinatario_nombre': doc_base.destinatario_nombre or doc_base.nombre_display,
+                    'receptor_nombre': doc_base.receptor_nombre,
+                    'receptor_dni': doc_base.receptor_dni,
+                    'cuerpo': doc_base.cuerpo,
+                })
+                if doc_base.tipo == 'ACTA':
+                    items_base = list(doc_base.items.values('cantidad', 'descripcion', 'numero_serie', 'codigo_inventario', 'condicion', 'observaciones'))
+                    if items_base:
+                        formset = ItemActaFormSet(prefix='items', initial=items_base)
+                        formset.extra = max(1, len(items_base))
+                messages.info(request, f'Se cargó el contenido del documento {doc_base.numero} como plantilla. Al guardar se registrará con un nuevo número correlativo.')
+
         # Diccionario de preformatos basados en los documentos reales de \\snfserver2\Informatica\notas de pedido
-        if plantilla in PLANTILLAS_SNAF:
+        elif plantilla in PLANTILLAS_SNAF:
             p_data = PLANTILLAS_SNAF[plantilla]
             initial_data.update({
                 'tipo': p_data['tipo'],
@@ -488,13 +542,14 @@ def crear_documento(request):
                 initial_data['remitente'] = nombre_emisor
 
         form = DocumentoForm(initial=initial_data)
-        formset = ItemActaFormSet(prefix='items')
 
     # Estimación de próximo número para la vista previa
     try:
         proximo_numero = generar_numero(tipo_param, date.today().year)
     except Exception:
         proximo_numero = 'NOTE-2026-001'
+
+    sugerencias = obtener_sugerencias_destinatarios()
 
     return render(request, 'documentos/formulario.html', {
         'form': form,
@@ -505,6 +560,7 @@ def crear_documento(request):
         'plantilla_seleccionada': plantilla,
         'nombre_emisor': nombre_emisor,
         'nota_recibida': nota_recibida,
+        **sugerencias,
     })
 
 
@@ -554,6 +610,8 @@ def editar_documento(request, pk):
         form = DocumentoForm(instance=doc)
         formset = ItemActaFormSet(instance=doc, prefix='items') if doc.tipo == 'ACTA' else None
 
+    sugerencias = obtener_sugerencias_destinatarios()
+
     return render(request, 'documentos/formulario.html', {
         'form': form,
         'formset': formset,
@@ -563,6 +621,7 @@ def editar_documento(request, pk):
         'modo': 'editar',
         'proximo_numero': doc.numero,
         'nombre_emisor': nombre_emisor,
+        **sugerencias,
     })
 
 
