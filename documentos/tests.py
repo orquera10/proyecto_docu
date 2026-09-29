@@ -932,4 +932,39 @@ class MesaEntradaNotasRecibidasTests(TestCase):
         self.assertEqual(resp_del.status_code, 200)
         self.assertContains(resp_del, 'No se puede eliminar')
 
+    def test_marcar_como_entregado_con_adjuntos_escaneados_y_pdf(self):
+        from PIL import Image
+        img_io = BytesIO()
+        Image.new('RGB', (300, 400), color='white').save(img_io, format='JPEG')
+        img_io.seek(0)
+        archivo_foto = SimpleUploadedFile('escaneo_pagina1.jpg', img_io.getvalue(), content_type='image/jpeg')
+
+        doc = Documento.objects.create(
+            tipo='NOTA',
+            fecha=date(2026, 9, 29),
+            asunto='Nota con escaneo firmado',
+            remitente='Área de Informática',
+            destinatario='Secretaría',
+            cuerpo='Nota para entregar con firma escaneada.',
+            estado='EMITIDO',
+            creado_por=self.user,
+        )
+
+        resp = self.client.post(f'/documentos/{doc.pk}/', {
+            'accion_entregar': '1',
+            'imagenes_escaneo': [archivo_foto],
+            'filtro_escaneo': 'magic_color',
+            'autocrop': '1',
+        }, follow=True)
+
+        self.assertEqual(resp.status_code, 200)
+        doc.refresh_from_db()
+        self.assertEqual(doc.estado, 'ENTREGADO')
+        self.assertEqual(doc.adjuntos.count(), 1)
+        adj = doc.adjuntos.first()
+        self.assertTrue(adj.nombre_original.startswith('FIRMADO_'))
+        self.assertTrue(adj.nombre_original.endswith('.pdf'))
+        self.assertTrue(adj.es_pdf)
+
+
 

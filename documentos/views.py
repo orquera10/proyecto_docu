@@ -364,12 +364,55 @@ def guardar_adjuntos(request, doc):
 def detalle_documento(request, pk):
     doc = get_object_or_404(Documento, pk=pk)
 
-    # Acción rápida para marcar como entregado / firmado
+    # Acción para marcar como entregado / firmado con adjunto opcional escaneado o subido
     if request.method == 'POST' and 'accion_entregar' in request.POST:
         if doc.estado == 'EMITIDO':
+            adjunto_creado = False
+
+            # 1. Procesar fotos tomadas con celular / escaneadas
+            imagenes = request.FILES.getlist('imagenes_escaneo')
+            if imagenes:
+                filtro = request.POST.get('filtro_escaneo', 'magic_color')
+                autocrop = request.POST.get('autocrop', '1') == '1'
+                nombre_pdf = f"FIRMADO_{doc.numero.replace('/', '-')}.pdf"
+                pdf_content = compilar_imagenes_a_pdf(
+                    imagenes,
+                    nombre_archivo=nombre_pdf,
+                    filtro=filtro,
+                    autocrop=autocrop
+                )
+                if pdf_content:
+                    adj = Adjunto(
+                        documento=doc,
+                        nombre_original=nombre_pdf,
+                        subido_por=request.user,
+                    )
+                    adj.archivo.save(nombre_pdf, pdf_content, save=True)
+                    adjunto_creado = True
+
+            # 2. Procesar subida directa de PDF escaneado
+            if 'archivo_pdf' in request.FILES and request.FILES['archivo_pdf']:
+                f_pdf = request.FILES['archivo_pdf']
+                Adjunto.objects.create(
+                    documento=doc,
+                    archivo=f_pdf,
+                    nombre_original=f_pdf.name,
+                    tamano=f_pdf.size,
+                    subido_por=request.user,
+                )
+                adjunto_creado = True
+
+            # 3. Guardar cualquier otro archivo adjunto enviado
+            guardar_adjuntos(request, doc)
+
+            # 4. Cambiar estado a ENTREGADO
             doc.estado = 'ENTREGADO'
             doc.save()
-            messages.success(request, f'Documento {doc.numero} marcado como ENTREGADO y firmado. Ha quedado protegido contra modificaciones.')
+
+            if adjunto_creado:
+                messages.success(request, f'Documento {doc.numero} marcado como ENTREGADO y firmado con el adjunto digitalizado. Ha quedado protegido contra modificaciones.')
+            else:
+                messages.success(request, f'Documento {doc.numero} marcado como ENTREGADO y firmado. Ha quedado protegido contra modificaciones.')
             return redirect('detalle_documento', pk=doc.pk)
 
     items = doc.items.all() if doc.tipo == 'ACTA' else []

@@ -25,6 +25,14 @@
       grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
       gap: 14px;
     }
+    @keyframes fadeInModal {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+    @keyframes scaleInModal {
+      from { opacity: 0; transform: scale(0.96); }
+      to { opacity: 1; transform: scale(1); }
+    }
     @media (max-width: 640px) {
       .attachments-cards-grid {
         grid-template-columns: 1fr !important;
@@ -90,13 +98,10 @@
 {% block topbar_actions %}
   <div class="doc-action-bar" style="margin-bottom: 0;">
     {% if doc.estado == 'EMITIDO' %}
-      <form method="post" style="display:inline;" onsubmit="return confirm('¿Confirmar que este documento fue impreso, firmado y entregado?\n\nAl marcarlo como Entregado, quedará bloqueado y ya no se podrá modificar.');">
-        {% csrf_token %}
-        <button type="submit" name="accion_entregar" value="1" class="btn btn-primary" style="background: #6366f1; border-color: #4f46e5;" title="Registrar como impreso, firmado y entregado">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M20 6L9 17l-5-5"></path></svg>
-          <span>Marcar Entregado</span>
-        </button>
-      </form>
+      <button type="button" onclick="abrirModalEntregar()" class="btn btn-primary" style="background: #6366f1; border-color: #4f46e5;" title="Registrar como impreso, firmado y entregado">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M20 6L9 17l-5-5"></path></svg>
+        <span>Marcar Entregado</span>
+      </button>
     {% elif doc.estado == 'ENTREGADO' %}
       <span class="badge badge-entregado" style="padding: 6px 12px; font-size: 12px;" title="Documento entregado y firmado (bloqueado para modificaciones)">
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
@@ -526,4 +531,257 @@
 </div>
 {% endif %}
 
+{% if doc.estado == 'EMITIDO' %}
+<!-- Modal para Marcar como Entregado y Digitalizar/Adjuntar Firma -->
+<div id="modal-entregar" class="no-print" style="display: none; position: fixed; inset: 0; z-index: 9999; background: rgba(15, 23, 42, 0.65); backdrop-filter: blur(4px); align-items: center; justify-content: center; padding: 16px; animation: fadeInModal 0.2s ease;">
+  <div style="background: white; border-radius: 14px; max-width: 640px; width: 100%; max-height: 92vh; display: flex; flex-direction: column; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.25), 0 10px 10px -5px rgba(0, 0, 0, 0.1); border: 1px solid #cbd5e1; animation: scaleInModal 0.2s ease; overflow: hidden;">
+    
+    <!-- Cabecera del Modal -->
+    <div style="padding: 16px 20px; border-bottom: 1px solid #e2e8f0; display: flex; align-items: center; justify-content: space-between; background: #f8fafc;">
+      <div style="display: flex; align-items: center; gap: 12px;">
+        <div style="width: 38px; height: 38px; border-radius: 8px; background: #e0e7ff; color: #4338ca; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M20 6L9 17l-5-5"></path></svg>
+        </div>
+        <div>
+          <h3 style="margin: 0; font-size: 16px; font-weight: 700; color: #1e293b;">Marcar como Entregado / Firmado</h3>
+          <p style="margin: 2px 0 0 0; font-size: 12.5px; color: #64748b;">Documento: <strong style="color: #4338ca;">{{ doc.numero }}</strong></p>
+        </div>
+      </div>
+      <button type="button" onclick="cerrarModalEntregar()" style="background: transparent; border: none; font-size: 20px; color: #94a3b8; cursor: pointer; padding: 6px; border-radius: 6px; line-height: 1; display: flex; align-items: center; justify-content: center;" title="Cerrar ventana">
+        ✕
+      </button>
+    </div>
+
+    <!-- Formulario -->
+    <form method="post" action="" enctype="multipart/form-data" id="form-entregar-doc" style="display: flex; flex-direction: column; overflow: hidden; margin: 0;">
+      {% csrf_token %}
+      <input type="hidden" name="accion_entregar" value="1">
+
+      <div style="padding: 20px; overflow-y: auto; max-height: calc(92vh - 140px);">
+        
+        <!-- Aviso Informativo -->
+        <div style="background: #eef2ff; border: 1px solid #c7d2fe; border-radius: 8px; padding: 12px 14px; margin-bottom: 18px; display: flex; gap: 10px; align-items: flex-start;">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#4f46e5" stroke-width="2" style="flex-shrink: 0; margin-top: 2px;"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
+          <div style="font-size: 12.5px; color: #312e81; line-height: 1.45;">
+            Al confirmar, el documento pasará al estado <strong>ENTREGADO</strong> y quedará <strong>bloqueado contra modificaciones</strong>. Opcionalmente puede tomar fotos o adjuntar el PDF de la copia física firmada.
+          </div>
+        </div>
+
+        <!-- Tarjeta de Digitalización / Escaneo Móvil -->
+        <div style="padding: 16px; border: 2px dashed #93c5fd; background: #f8fafc; border-radius: 8px;">
+          <div style="margin-bottom: 14px;">
+            <h4 style="font-size: 14px; font-weight: 700; color: #1e3a8a; margin: 0 0 4px 0; display: flex; align-items: center; gap: 8px;">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path><circle cx="12" cy="13" r="4"></circle></svg>
+              <span>Digitalización: Escanear con Celular o Subir PDF</span>
+            </h4>
+            <p style="font-size: 12px; color: #475569; margin: 0;">
+              Saque fotos a las hojas firmadas con el teléfono o seleccione un PDF. El sistema aplicará corrección automática y lo guardará como adjunto respaldatorio.
+            </p>
+          </div>
+
+          <!-- Opciones CamScanner -->
+          <div style="background: #ffffff; border: 1px solid #cbd5e1; border-radius: 8px; padding: 10px 12px; margin-bottom: 14px; display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; align-items: center;">
+            <div>
+              <label style="font-size: 11.5px; font-weight: 700; color: #1e3a8a; display: block; margin-bottom: 4px;">
+                🌟 Realce CamScanner
+              </label>
+              <select name="filtro_escaneo" id="id_filtro_escaneo_entregar" class="form-input-styled" style="font-size: 12px; height: 34px; padding: 4px 8px;">
+                <option value="magic_color" selected>🌟 Color Mágico (Limpio y nítido)</option>
+                <option value="escala_grises">📄 Escala de Grises Nítida</option>
+                <option value="blanco_negro">🖨️ Blanco y Negro Puro</option>
+                <option value="original">📷 Foto Original (Sin filtros)</option>
+              </select>
+            </div>
+            <div style="display: flex; align-items: center; gap: 8px; padding-top: 14px;">
+              <input type="checkbox" name="autocrop" id="id_autocrop_entregar" value="1" checked style="width: 16px; height: 16px; cursor: pointer; accent-color: #2563eb;">
+              <label for="id_autocrop_entregar" style="font-size: 12px; font-weight: 600; color: #334155; cursor: pointer; margin: 0;">
+                Auto-recortar bordes (Deskew)
+              </label>
+            </div>
+          </div>
+
+          <!-- Botones de Acción de Cámara y Carga -->
+          <div style="display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 12px;">
+            <!-- Input de Cámara nativo para móviles -->
+            <input type="file" id="camera-input-entregar" name="imagenes_escaneo" accept="image/*" capture="environment" multiple style="display: none;" onchange="procesarImagenesEntregar(this.files)">
+            <!-- Input de Galería de fotos -->
+            <input type="file" id="gallery-input-entregar" name="imagenes_escaneo" accept="image/jpeg,image/png,image/webp" multiple style="display: none;" onchange="procesarImagenesEntregar(this.files)">
+
+            <button type="button" class="btn btn-primary" onclick="document.getElementById('camera-input-entregar').click();" style="display: flex; align-items: center; gap: 6px; background: #2563eb; padding: 8px 14px; font-size: 12px;">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path><circle cx="12" cy="13" r="4"></circle></svg>
+              <span style="font-weight: 700;">Tomar Foto / Escanear</span>
+            </button>
+
+            <button type="button" class="btn btn-outline" onclick="document.getElementById('gallery-input-entregar').click();" style="display: flex; align-items: center; gap: 6px; background: white; padding: 8px 12px; font-size: 12px;">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>
+              <span>Fotos de Galería</span>
+            </button>
+          </div>
+
+          <!-- Subida de PDF directo -->
+          <div style="background: white; border: 1px solid #cbd5e1; border-radius: 6px; padding: 8px 12px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px;">
+            <span style="font-size: 11.5px; font-weight: 600; color: #475569;">O subir PDF firmado directo:</span>
+            <input type="file" name="archivo_pdf" id="id_archivo_pdf_entregar" accept=".pdf,application/pdf" style="font-size: 11.5px;">
+          </div>
+
+          <!-- Previsualización de páginas escaneadas -->
+          <div id="contenedor-paginas-entregar" style="display: none; margin-top: 14px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+              <div style="font-size: 12px; font-weight: 700; color: #1e293b; display: flex; align-items: center; gap: 6px;">
+                <span style="display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #10b981;"></span>
+                <span>Páginas capturadas para compilar (<span id="contador-paginas-entregar">0</span>):</span>
+              </div>
+              <button type="button" class="btn btn-outline btn-sm" onclick="limpiarFotosEntregar()" style="color: #ef4444; border-color: #fca5a5; font-size: 11px; padding: 2px 8px;">
+                Descartar fotos
+              </button>
+            </div>
+            <div id="grid-paginas-entregar" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(105px, 1fr)); gap: 10px;">
+            </div>
+          </div>
+
+        </div>
+
+      </div>
+
+      <!-- Pie del Modal -->
+      <div style="padding: 12px 20px; border-top: 1px solid #e2e8f0; background: #f8fafc; display: flex; justify-content: flex-end; gap: 10px;">
+        <button type="button" class="btn btn-outline" onclick="cerrarModalEntregar()" style="padding: 8px 16px; font-size: 13px;">
+          Cancelar
+        </button>
+        <button type="submit" class="btn btn-primary" style="background: #4f46e5; border-color: #4338ca; padding: 8px 20px; font-size: 13px; font-weight: 700; display: flex; align-items: center; gap: 6px;">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M20 6L9 17l-5-5"></path></svg>
+          <span>Confirmar y Marcar Entregado</span>
+        </button>
+      </div>
+    </form>
+
+  </div>
+</div>
+{% endif %}
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+let listaFotosEntregar = [];
+
+function abrirModalEntregar() {
+  const modal = document.getElementById('modal-entregar');
+  if (modal) {
+    modal.style.display = 'flex';
+    document.body.style.overflow = 'hidden';
+  }
+}
+
+function cerrarModalEntregar() {
+  const modal = document.getElementById('modal-entregar');
+  if (modal) {
+    modal.style.display = 'none';
+    document.body.style.overflow = '';
+  }
+}
+
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape') {
+    cerrarModalEntregar();
+  }
+});
+
+const modalEntregar = document.getElementById('modal-entregar');
+if (modalEntregar) {
+  modalEntregar.addEventListener('click', function(e) {
+    if (e.target === modalEntregar) {
+      cerrarModalEntregar();
+    }
+  });
+}
+
+function procesarImagenesEntregar(files) {
+  if (!files || files.length === 0) return;
+  for (let i = 0; i < files.length; i++) {
+    listaFotosEntregar.push(files[i]);
+  }
+  actualizarPreviewEntregar();
+}
+
+function actualizarPreviewEntregar() {
+  const contenedor = document.getElementById('contenedor-paginas-entregar');
+  const grid = document.getElementById('grid-paginas-entregar');
+  const contador = document.getElementById('contador-paginas-entregar');
+
+  if (!contenedor || !grid || !contador) return;
+
+  if (listaFotosEntregar.length === 0) {
+    contenedor.style.display = 'none';
+    grid.innerHTML = '';
+    return;
+  }
+
+  contenedor.style.display = 'block';
+  contador.textContent = listaFotosEntregar.length;
+  grid.innerHTML = '';
+
+  listaFotosEntregar.forEach((file, index) => {
+    const card = document.createElement('div');
+    card.style = 'background: white; border: 1px solid #cbd5e1; border-radius: 6px; padding: 6px; position: relative; display: flex; flex-direction: column; align-items: center; box-shadow: 0 1px 2px rgba(0,0,0,0.05);';
+
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      card.innerHTML = `
+        <div style="position: relative; width: 100%; height: 110px; overflow: hidden; border-radius: 4px; background: #f8fafc; display: flex; align-items: center; justify-content: center;">
+          <img src="${e.target.result}" style="width: 100%; height: 100%; object-fit: contain; border-radius: 4px;">
+          <button type="button" onclick="eliminarFotoEntregar(${index})" style="position: absolute; top: 3px; right: 3px; width: 20px; height: 20px; border-radius: 50%; background: rgba(239, 68, 68, 0.9); color: white; border: none; font-size: 11px; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; line-height: 1;" title="Quitar página">✕</button>
+          <span style="position: absolute; bottom: 3px; left: 3px; background: rgba(15, 23, 42, 0.8); color: white; font-size: 9.5px; font-weight: 700; padding: 1px 5px; border-radius: 3px;">Pág. ${index + 1}</span>
+        </div>
+        <div style="font-size: 10px; color: #64748b; margin-top: 4px; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+          ${file.name}
+        </div>
+      `;
+    };
+    reader.readAsDataURL(file);
+    grid.appendChild(card);
+  });
+}
+
+function eliminarFotoEntregar(index) {
+  listaFotosEntregar.splice(index, 1);
+  actualizarPreviewEntregar();
+}
+
+function limpiarFotosEntregar() {
+  listaFotosEntregar = [];
+  actualizarPreviewEntregar();
+  const c = document.getElementById('camera-input-entregar');
+  const g = document.getElementById('gallery-input-entregar');
+  if (c) c.value = '';
+  if (g) g.value = '';
+}
+
+const formEntregar = document.getElementById('form-entregar-doc');
+if (formEntregar) {
+  formEntregar.addEventListener('submit', function(e) {
+    if (listaFotosEntregar.length > 0) {
+      const dataTransfer = new DataTransfer();
+      listaFotosEntregar.forEach(file => dataTransfer.items.add(file));
+      const cameraInput = document.getElementById('camera-input-entregar');
+      if (cameraInput) {
+        cameraInput.files = dataTransfer.files;
+      }
+      if (window.mostrarSpinnerCarga) {
+        window.mostrarSpinnerCarga(
+          'Digitalizando y Guardando...',
+          `Procesando ${listaFotosEntregar.length} página(s): aplicando auto-recorte, eliminación de fondo y realce CamScanner. Por favor espere unos segundos.`
+        );
+      }
+    } else {
+      if (window.mostrarSpinnerCarga) {
+        window.mostrarSpinnerCarga(
+          'Actualizando Documento...',
+          'Registrando el documento como Entregado. Por favor espere.'
+        );
+      }
+    }
+  });
+}
+</script>
 {% endblock %}
