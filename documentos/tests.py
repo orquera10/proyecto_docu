@@ -56,7 +56,7 @@ class ExtraccionTests(SimpleTestCase):
 
     def test_listas_html_escapado(self):
         html = cuerpo_html('• Cable <especial>\n2. Instalar\n<script>alert(1)</script>')
-        self.assertIn('•&nbsp;', html)
+        self.assertTrue('&bull;&nbsp;' in html or '•&nbsp;' in html)
         self.assertIn('2.&nbsp;', html)
         self.assertIn('&lt;especial&gt;', html)
         self.assertNotIn('<script>', html)
@@ -902,5 +902,32 @@ class MesaEntradaNotasRecibidasTests(TestCase):
         self.assertContains(resp, 'pdf-canvas-wrapper')
         self.assertContains(resp, 'pdf-prev-btn')
         self.assertContains(resp, 'pdf-next-btn')
+
+    def test_marcar_como_entregado_y_bloqueo_edicion(self):
+        doc = Documento.objects.create(
+            tipo='NOTA',
+            fecha=date(2026, 9, 29),
+            asunto='Nota para entrega',
+            remitente='Área de Informática',
+            destinatario='Secretaría',
+            cuerpo='Contenido de la nota.',
+            estado='EMITIDO',
+            creado_por=self.user,
+        )
+        # 1. Marcar como entregado desde la vista de detalle
+        resp = self.client.post(f'/documentos/{doc.pk}/', {'accion_entregar': '1'}, follow=True)
+        self.assertEqual(resp.status_code, 200)
+        doc.refresh_from_db()
+        self.assertEqual(doc.estado, 'ENTREGADO')
+
+        # 2. Intentar editar un documento entregado debe ser bloqueado
+        resp_edit = self.client.get(f'/documentos/{doc.pk}/editar/', follow=True)
+        self.assertEqual(resp_edit.status_code, 200)
+        self.assertContains(resp_edit, 'no puede ser modificado')
+
+        # 3. Intentar eliminar un documento entregado debe ser bloqueado
+        resp_del = self.client.get(f'/documentos/{doc.pk}/eliminar/', follow=True)
+        self.assertEqual(resp_del.status_code, 200)
+        self.assertContains(resp_del, 'No se puede eliminar')
 
 

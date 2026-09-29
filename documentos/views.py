@@ -227,6 +227,7 @@ def dashboard(request):
     }
     borradores = Documento.objects.filter(estado='BORRADOR').count()
     emitidos = Documento.objects.filter(estado='EMITIDO').count()
+    entregados = Documento.objects.filter(estado='ENTREGADO').count()
     recientes = Documento.objects.select_related('creado_por').order_by('-creado_en')[:6]
 
     return render(request, 'documentos/dashboard.html', {
@@ -234,6 +235,7 @@ def dashboard(request):
         'por_tipo': por_tipo,
         'borradores': borradores,
         'emitidos': emitidos,
+        'entregados': entregados,
         'recientes': recientes,
     })
 
@@ -372,6 +374,14 @@ def detalle_documento(request, pk):
             messages.success(request, f'Documento {doc.numero} aprobado y emitido exitosamente.')
             return redirect('detalle_documento', pk=doc.pk)
 
+    # Acción rápida para marcar como entregado / firmado
+    if request.method == 'POST' and 'accion_entregar' in request.POST:
+        if doc.estado == 'EMITIDO':
+            doc.estado = 'ENTREGADO'
+            doc.save()
+            messages.success(request, f'Documento {doc.numero} marcado como ENTREGADO y firmado. Ha quedado protegido contra modificaciones.')
+            return redirect('detalle_documento', pk=doc.pk)
+
     items = doc.items.all() if doc.tipo == 'ACTA' else []
     adjuntos = doc.adjuntos.all()
     return render(request, 'documentos/detalle.html', {
@@ -504,6 +514,10 @@ def crear_documento(request):
 def editar_documento(request, pk):
     doc = get_object_or_404(Documento, pk=pk)
 
+    if doc.estado == 'ENTREGADO':
+        messages.error(request, f'El documento {doc.numero} se encuentra en estado ENTREGADO (firmado) y no puede ser modificado.')
+        return redirect('detalle_documento', pk=doc.pk)
+
     nombre_completo = request.user.get_full_name().strip()
     nombre_emisor = nombre_completo if nombre_completo else request.user.username
 
@@ -611,8 +625,8 @@ def eliminar_adjunto(request, pk):
 @login_required
 def eliminar_documento(request, pk):
     doc = get_object_or_404(Documento, pk=pk)
-    if doc.estado == 'EMITIDO':
-        messages.error(request, 'No se puede eliminar un documento ya emitido.')
+    if doc.estado in ['EMITIDO', 'ENTREGADO']:
+        messages.error(request, f'No se puede eliminar un documento {doc.get_estado_display().lower()}.')
         return redirect('detalle_documento', pk=doc.pk)
 
     if request.method == 'POST':

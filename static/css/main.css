@@ -652,6 +652,12 @@ a {
   color: var(--badge-signed-text);
 }
 
+.badge-entregado {
+  background: #e0e7ff;
+  color: #3730a3;
+  border: 1px solid #c7d2fe;
+}
+
 .badge-enviado {
   background: var(--badge-sent-bg);
   color: var(--badge-sent-text);

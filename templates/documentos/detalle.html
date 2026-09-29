@@ -92,11 +92,24 @@
     {% if doc.estado == 'BORRADOR' %}
       <form method="post" style="display:inline;">
         {% csrf_token %}
-        <button type="submit" name="accion_aprobar" value="1" class="btn btn-success">
+        <button type="submit" name="accion_aprobar" value="1" class="btn btn-success" title="Aprobar y emitir documento">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
           <span>Aprobar</span>
         </button>
       </form>
+    {% elif doc.estado == 'EMITIDO' %}
+      <form method="post" style="display:inline;" onsubmit="return confirm('¿Confirmar que este documento fue impreso, firmado y entregado?\n\nAl marcarlo como Entregado, quedará bloqueado y ya no se podrá modificar.');">
+        {% csrf_token %}
+        <button type="submit" name="accion_entregar" value="1" class="btn btn-primary" style="background: #6366f1; border-color: #4f46e5;" title="Registrar como impreso, firmado y entregado">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M20 6L9 17l-5-5"></path></svg>
+          <span>Marcar Entregado</span>
+        </button>
+      </form>
+    {% elif doc.estado == 'ENTREGADO' %}
+      <span class="badge badge-entregado" style="padding: 6px 12px; font-size: 12px;" title="Documento entregado y firmado (bloqueado para modificaciones)">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+        <span>Entregado / Firmado</span>
+      </span>
     {% endif %}
 
     <a href="{% url 'generar_pdf' doc.pk %}" target="_blank" class="btn btn-primary" title="Abrir y exportar PDF oficial">
@@ -104,10 +117,12 @@
       <span>Exportar PDF</span>
     </a>
 
-    <a href="{% url 'editar_documento' doc.pk %}" class="btn btn-outline">
-      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg>
-      <span>Editar</span>
-    </a>
+    {% if doc.estado != 'ENTREGADO' %}
+      <a href="{% url 'editar_documento' doc.pk %}" class="btn btn-outline">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg>
+        <span>Editar</span>
+      </a>
+    {% endif %}
   </div>
 {% endblock %}
 

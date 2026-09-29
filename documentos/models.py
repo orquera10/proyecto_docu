@@ -13,6 +13,7 @@ class Documento(models.Model):
     ESTADO_CHOICES = [
         ('BORRADOR', 'Borrador'),
         ('EMITIDO', 'Emitido'),
+        ('ENTREGADO', 'Entregado'),
     ]
 
     tipo = models.CharField('Tipo', max_length=10, choices=TIPO_CHOICES)
