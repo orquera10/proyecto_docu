@@ -349,7 +349,9 @@ def cuerpo_html(texto, para_pdf=False):
             nivel = min(len(m.group(1)) // 2, 5)
             marca = '•' if m.group(2) in '•●▪◦*-' else m.group(2)
             contenido = formatear_linea_texto(m.group(3))
-            salida.append(f'<p class="doc-list-item" style="margin-left:{18 + nivel*14}pt; text-indent:-12pt; text-align:left; margin-bottom:4pt;">{escape(marca)}&nbsp; {contenido}</p>')
+            # Usar entidad HTML para bullets en vez del carácter directo (evita cuadrados en servidores sin fuentes)
+            marca_html = '&bull;' if marca == '•' else escape(marca)
+            salida.append(f'<p class="doc-list-item" style="margin-left:{18 + nivel*14}pt; text-indent:-12pt; text-align:left; margin-bottom:4pt;">{marca_html}&nbsp; {contenido}</p>')
         else:
             contenido = formatear_linea_texto(linea_strip)
             salida.append(f'<p style="margin-bottom:6pt;">{contenido}</p>')
