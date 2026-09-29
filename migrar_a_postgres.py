@@ -54,6 +54,7 @@ def main():
                 'POSTGRES_USER', 'POSTGRES_PASSWORD', 'POSTGRES_PORT']:
         env_sqlite.pop(var, None)
     env_sqlite['DEBUG'] = 'True'
+    env_sqlite['PYTHONIOENCODING'] = 'utf-8'
 
     ret = run([
         sys.executable, 'manage.py', 'dumpdata',
@@ -70,8 +71,8 @@ def main():
 
     # Verificar el dump
     size = DUMP_FILE.stat().st_size
-    # Intentar utf-8 primero, luego latin-1 para caracteres como ñ
-    for enc in ['utf-8', 'latin-1', 'cp1252']:
+    # Intentar utf-8 primero, luego cp1252 y finalmente latin-1
+    for enc in ['utf-8', 'cp1252', 'latin-1']:
         try:
             with open(DUMP_FILE, 'r', encoding=enc) as f:
                 data = json.load(f)

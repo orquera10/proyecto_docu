@@ -344,10 +344,10 @@ def cuerpo_html(texto, para_pdf=False):
             continue
 
         # 3. Detección de Listas con Viñetas o Numeración
-        m = re.match(r'^(\s*)([•●▪◦*-]|\d+(?:\.\d+)*[.)]|[a-zA-Z][.)]|[ivxlcdmIVXLCDM]+[.)])\s+(.+)$', linea)
+        m = re.match(r'^(\s*)([•●▪◦*\-\x95]|\d+(?:\.\d+)*[.)]|[a-zA-Z][.)]|[ivxlcdmIVXLCDM]+[.)])\s+(.+)$', linea)
         if m:
             nivel = min(len(m.group(1)) // 2, 5)
-            marca = '•' if m.group(2) in '•●▪◦*-' else m.group(2)
+            marca = '•' if m.group(2) in '•●▪◦*-\x95' else m.group(2)
             contenido = formatear_linea_texto(m.group(3))
             # Usar entidad HTML para bullets en vez del carácter directo (evita cuadrados en servidores sin fuentes)
             marca_html = '&bull;' if marca == '•' else escape(marca)
