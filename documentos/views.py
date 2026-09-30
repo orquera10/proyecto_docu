@@ -428,7 +428,12 @@ def detalle_documento(request, pk):
             # 3. Guardar cualquier otro archivo adjunto enviado
             guardar_adjuntos(request, doc)
 
-            # 4. Cambiar estado a ENTREGADO
+            # 4. Guardar detalle / constancia de entrega si se proporcionó
+            detalle_entrega = request.POST.get('detalle_entrega', '').strip()
+            if detalle_entrega:
+                doc.detalle_entrega = detalle_entrega
+
+            # 5. Cambiar estado a ENTREGADO
             doc.estado = 'ENTREGADO'
             doc.save()
 

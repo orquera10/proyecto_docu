@@ -1012,6 +1012,23 @@ class DashboardYBusquedaGlobalTests(TestCase):
         self.assertContains(response, 'REC-2026-0099')
         self.assertContains(response, 'Mesa de Entrada – Notas Recibidas coincidentes')
 
+    def test_marcar_como_entregado_con_detalle_entrega(self):
+        resp = self.client.post(
+            f'/documentos/{self.doc_emitido.pk}/',
+            {
+                'accion_entregar': '1',
+                'detalle_entrega': 'Enviado por correo oficial a direccion@snaf.gob.ar con copia a Despacho.',
+            },
+            follow=True
+        )
+        self.assertEqual(resp.status_code, 200)
+        self.doc_emitido.refresh_from_db()
+        self.assertEqual(self.doc_emitido.estado, 'ENTREGADO')
+        self.assertEqual(self.doc_emitido.detalle_entrega, 'Enviado por correo oficial a direccion@snaf.gob.ar con copia a Despacho.')
+        self.assertContains(resp, 'Constancia y Detalle de Entrega')
+        self.assertContains(resp, 'Enviado por correo oficial a direccion@snaf.gob.ar con copia a Despacho.')
+
+
 
 
 

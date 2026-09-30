@@ -27,6 +27,7 @@ class Documento(models.Model):
     receptor_dni = models.CharField('DNI de quien recibe', max_length=30, blank=True, default='')
     cuerpo = models.TextField('Contenido', blank=True, default='')
     estado = models.CharField('Estado', max_length=10, choices=ESTADO_CHOICES, default='EMITIDO')
+    detalle_entrega = models.TextField('Detalle o Constancia de Entrega', blank=True, default='')
     creado_por = models.ForeignKey(User, on_delete=models.PROTECT, related_name='documentos', verbose_name='Creado por')
     creado_en = models.DateTimeField('Creado el', auto_now_add=True)
     modificado_en = models.DateTimeField('Modificado el', auto_now=True)
