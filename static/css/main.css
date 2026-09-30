@@ -496,7 +496,7 @@ a {
 
 /* Cuerpo de la Página */
 .page-container {
-  padding: 0 36px 40px;
+  padding: 24px 36px 40px;
   flex: 1;
 }
 
@@ -2525,7 +2525,7 @@ body.sysdoc-login-body {
   }
 
   .page-container {
-    padding: 14px 16px 36px;
+    padding: 18px 16px 36px;
     width: 100%;
     box-sizing: border-box;
   }
