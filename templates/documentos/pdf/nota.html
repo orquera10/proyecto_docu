@@ -9,7 +9,7 @@
       margin: 2.0cm 2.0cm 1.8cm 2.0cm;
       @frame encabezado_frame {
         -pdf-frame-content: encabezado;
-        left: 56.69pt; top: 14pt; width: 481.89pt; height: 50pt;
+        left: 56.69pt; top: 14pt; width: 481.89pt; height: 54pt;
       }
       @frame pie_frame {
         -pdf-frame-content: pie;
@@ -125,10 +125,12 @@
 
   <!-- ENCABEZADO INSTITUCIONAL BANNER -->
   <div id="encabezado">
-    <div style="text-align: right; margin-bottom: 3pt;">
+    <div style="text-align: right; margin-bottom: 2pt;">
       <img src="{{ encabezado_uri }}" style="width: 260pt; height: 32.5pt;" />
     </div>
-    <div style="border-bottom: 1.5pt solid #777777; width: 100%;"></div>
+    <table style="width: 100%; border-bottom: 1.5pt solid #777777;" cellpadding="0" cellspacing="0">
+      <tr><td style="font-size: 1pt; line-height: 1pt; height: 1pt;">&nbsp;</td></tr>
+    </table>
   </div>
 
   <!-- LUGAR Y FECHA -->
