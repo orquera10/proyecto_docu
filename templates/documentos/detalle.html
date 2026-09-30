@@ -20,10 +20,45 @@
       vertical-align: baseline;
       min-width: 60px;
     }
+    .attachments-section-card {
+      margin-top: 24px;
+      padding: 20px 24px;
+      background: white;
+      border-radius: var(--radius-lg);
+      border: 1px solid var(--border-color);
+      box-shadow: var(--shadow-sm);
+    }
     .attachments-cards-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
       gap: 14px;
+    }
+    .attachment-card-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 14px;
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: var(--radius-md);
+      transition: all 0.2s ease;
+      gap: 12px;
+      min-width: 0;
+      width: 100%;
+    }
+    .attachment-card-left {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      min-width: 0;
+      flex: 1 1 auto;
+      overflow: hidden;
+    }
+    .attachment-card-actions {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-shrink: 0;
     }
     @keyframes fadeInModal {
       from { opacity: 0; }
@@ -34,8 +69,36 @@
       to { opacity: 1; transform: scale(1); }
     }
     @media (max-width: 640px) {
+      .attachments-section-card {
+        padding: 14px !important;
+        margin-top: 16px !important;
+      }
       .attachments-cards-grid {
         grid-template-columns: 1fr !important;
+        gap: 10px !important;
+      }
+      .attachment-card-item {
+        flex-direction: column !important;
+        align-items: stretch !important;
+        gap: 10px !important;
+        padding: 12px 10px !important;
+      }
+      .attachment-card-left {
+        width: 100% !important;
+      }
+      .attachment-card-actions {
+        width: 100% !important;
+        padding-top: 8px !important;
+        border-top: 1px dashed #e2e8f0 !important;
+        justify-content: stretch !important;
+        gap: 8px !important;
+      }
+      .attachment-card-actions .btn {
+        flex: 1 !important;
+        justify-content: center !important;
+        padding: 7px 10px !important;
+        font-size: 12px !important;
+        min-height: 36px !important;
       }
       .doc-action-bar {
         display: flex !important;
@@ -485,10 +548,10 @@
 
 <!-- Sección de Archivos Adjuntos (Visible en Pantalla, Oculta en Impresión) -->
 {% if adjuntos %}
-<div class="ui-card no-print" style="margin-top: 24px; padding: 20px 24px; background: white; border-radius: var(--radius-lg); border: 1px solid var(--border-color); box-shadow: var(--shadow-sm);">
+<div class="attachments-section-card no-print">
   <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px;">
     <div style="display: flex; align-items: center; gap: 10px;">
-      <div style="width: 34px; height: 34px; border-radius: var(--radius-sm); background: #eff6ff; color: #2563eb; display: flex; align-items: center; justify-content: center;">
+      <div style="width: 34px; height: 34px; border-radius: var(--radius-sm); background: #eff6ff; color: #2563eb; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"></path>
         </svg>
@@ -502,8 +565,8 @@
 
   <div class="attachments-cards-grid">
     {% for adj in adjuntos %}
-      <div style="display: flex; align-items: center; justify-content: space-between; padding: 12px 14px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: var(--radius-md); transition: all 0.2s ease;">
-        <div style="display: flex; align-items: center; gap: 12px; overflow: hidden;">
+      <div class="attachment-card-item">
+        <div class="attachment-card-left">
           <div style="width: 36px; height: 36px; border-radius: 6px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; {% if adj.es_imagen %}background:#eff6ff;color:#2563eb;{% elif adj.es_pdf %}background:#fee2e2;color:#dc2626;{% else %}background:#f1f5f9;color:#475569;{% endif %}">
             {% if adj.es_imagen %}
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>
@@ -513,25 +576,26 @@
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline></svg>
             {% endif %}
           </div>
-          <div style="overflow: hidden;">
+          <div style="overflow: hidden; min-width: 0; flex: 1;">
             <a href="{{ adj.archivo.url }}" target="_blank" style="font-size: 13px; font-weight: 600; color: var(--text-color); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block; text-decoration: none;" title="Abrir {{ adj.nombre_original }} en nueva pestaña">{{ adj.nombre_original }}</a>
             <div style="font-size: 11.5px; color: var(--text-muted); margin-top: 2px;">{{ adj.tamano_formateado }} &bull; {{ adj.creado_en|date:"d/m/Y H:i" }}</div>
           </div>
         </div>
-        <div style="display: flex; align-items: center; gap: 6px; margin-left: 8px; flex-shrink: 0;">
-          <a href="{{ adj.archivo.url }}" target="_blank" class="btn btn-outline btn-sm" style="display: inline-flex; align-items: center; gap: 5px; padding: 6px 11px; font-size: 12px; color: #2563eb; background: #eff6ff; border-color: #bfdbfe; text-decoration: none;" title="Ver archivo en otra pestaña">
+        <div class="attachment-card-actions">
+          <a href="{{ adj.archivo.url }}" target="_blank" class="btn btn-outline btn-sm" style="display: inline-flex; align-items: center; gap: 5px; color: #2563eb; background: #eff6ff; border-color: #bfdbfe; text-decoration: none;" title="Ver archivo en otra pestaña">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
               <circle cx="12" cy="12" r="3"></circle>
             </svg>
             <span style="font-weight: 600;">Ver</span>
           </a>
-          <a href="{{ adj.archivo.url }}" download="{{ adj.nombre_original }}" class="btn btn-outline btn-sm" style="display: inline-flex; align-items: center; padding: 6px 9px; font-size: 12px;" title="Descargar archivo">
+          <a href="{{ adj.archivo.url }}" download="{{ adj.nombre_original }}" class="btn btn-outline btn-sm" style="display: inline-flex; align-items: center; gap: 5px;" title="Descargar archivo">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
               <polyline points="7 10 12 15 17 10"></polyline>
               <line x1="12" y1="15" x2="12" y2="3"></line>
             </svg>
+            <span>Descargar</span>
           </a>
         </div>
       </div>
