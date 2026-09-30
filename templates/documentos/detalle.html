@@ -269,9 +269,12 @@
     <!-- ══════════════════════════════════════════════════════════ -->
 
     <!-- Encabezado Institucional -->
-    <div class="sheet-encabezado-img-wrap" style="text-align: right; margin-bottom: 16px;">
+    <div class="sheet-encabezado-img-wrap" style="text-align: right; margin-bottom: 4px;">
       <img src="{% static 'img/encabezado_institucional.png' %}" alt="Gobierno de Jujuy - Secretaría de Niñez, Adolescencia y Familia" style="width: 58%; max-width: 420px; height: auto; display: inline-block;">
     </div>
+
+    <!-- Línea separadora horizontal -->
+    <div class="sheet-sep-line" style="border-bottom: 1.5px solid #888888; margin-bottom: 18px;"></div>
 
     <!-- Fecha arriba a la derecha -->
     <div class="sheet-fecha" style="text-align: right; font-size: 13.5px; color: #000000; margin-bottom: 18px;">
@@ -350,9 +353,12 @@
     <!-- PARTE 1: ORIGINAL -->
     <div class="acta-half-sheet">
       <!-- Encabezado Institucional -->
-      <div style="text-align: right; margin-bottom: 10px;">
+      <div style="text-align: right; margin-bottom: 4px;">
         <img src="{% static 'img/encabezado_institucional.png' %}" alt="Gobierno de Jujuy - Secretaría de Niñez, Adolescencia y Familia" style="width: 56%; max-width: 390px; height: auto; display: inline-block;">
       </div>
+
+      <!-- Línea separadora horizontal -->
+      <div style="border-bottom: 1.5px solid #888888; margin-bottom: 12px;"></div>
 
       <div style="text-align: right; font-size: 13px; color: #000000; text-transform: uppercase; margin-bottom: 8px;">
         SAN SALVADOR DE JUJUY, {{ doc.fecha.day }} de {{ doc.fecha|date:"F"|lower }} del {{ doc.fecha.year }}
@@ -452,9 +458,12 @@
     <!-- PARTE 2: DUPLICADO -->
     <div class="acta-half-sheet" style="max-width: 100%; overflow-x: hidden;">
       <!-- Encabezado Institucional -->
-      <div style="text-align: right; margin-bottom: 10px;">
+      <div style="text-align: right; margin-bottom: 4px;">
         <img src="{% static 'img/encabezado_institucional.png' %}" alt="Gobierno de Jujuy - Secretaría de Niñez, Adolescencia y Familia" style="width: 56%; max-width: 390px; height: auto; display: inline-block;">
       </div>
+
+      <!-- Línea separadora horizontal -->
+      <div style="border-bottom: 1.5px solid #888888; margin-bottom: 12px;"></div>
 
       <div style="text-align: right; font-size: 13px; color: #000000; text-transform: uppercase; margin-bottom: 8px;">
         SAN SALVADOR DE JUJUY, {{ doc.fecha.day }} de {{ doc.fecha|date:"F"|lower }} del {{ doc.fecha.year }}
