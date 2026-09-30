@@ -514,17 +514,26 @@
             {% endif %}
           </div>
           <div style="overflow: hidden;">
-            <div style="font-size: 13px; font-weight: 600; color: var(--text-color); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="{{ adj.nombre_original }}">{{ adj.nombre_original }}</div>
+            <a href="{{ adj.archivo.url }}" target="_blank" style="font-size: 13px; font-weight: 600; color: var(--text-color); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block; text-decoration: none;" title="Abrir {{ adj.nombre_original }} en nueva pestaña">{{ adj.nombre_original }}</a>
             <div style="font-size: 11.5px; color: var(--text-muted); margin-top: 2px;">{{ adj.tamano_formateado }} &bull; {{ adj.creado_en|date:"d/m/Y H:i" }}</div>
           </div>
         </div>
-        <a href="{{ adj.archivo.url }}" target="_blank" download class="btn btn-outline btn-sm" style="padding: 6px 10px; font-size: 12px; white-space: nowrap; margin-left: 8px;" title="Descargar archivo">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-            <polyline points="7 10 12 15 17 10"></polyline>
-            <line x1="12" y1="15" x2="12" y2="3"></line>
-          </svg>
-        </a>
+        <div style="display: flex; align-items: center; gap: 6px; margin-left: 8px; flex-shrink: 0;">
+          <a href="{{ adj.archivo.url }}" target="_blank" class="btn btn-outline btn-sm" style="display: inline-flex; align-items: center; gap: 5px; padding: 6px 11px; font-size: 12px; color: #2563eb; background: #eff6ff; border-color: #bfdbfe; text-decoration: none;" title="Ver archivo en otra pestaña">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+              <circle cx="12" cy="12" r="3"></circle>
+            </svg>
+            <span style="font-weight: 600;">Ver</span>
+          </a>
+          <a href="{{ adj.archivo.url }}" download="{{ adj.nombre_original }}" class="btn btn-outline btn-sm" style="display: inline-flex; align-items: center; padding: 6px 9px; font-size: 12px;" title="Descargar archivo">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+              <polyline points="7 10 12 15 17 10"></polyline>
+              <line x1="12" y1="15" x2="12" y2="3"></line>
+            </svg>
+          </a>
+        </div>
       </div>
     {% endfor %}
   </div>
