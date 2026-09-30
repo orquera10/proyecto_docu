@@ -168,26 +168,9 @@
         </div>
       </div>
 
-      <!-- Opciones de Procesamiento Inteligente tipo CamScanner -->
-      <div style="background: #ffffff; border: 1px solid #cbd5e1; border-radius: 8px; padding: 14px 16px; margin-bottom: 16px; display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 14px; align-items: center;">
-        <div>
-          <label style="font-size: 12.5px; font-weight: 700; color: #1e3a8a; display: block; margin-bottom: 5px;">
-            🌟 Realce de Contraste e Iluminación (Estilo CamScanner)
-          </label>
-          <select name="filtro_escaneo" id="id_filtro_escaneo" class="form-input-styled" style="font-size: 13px; height: 38px;">
-            <option value="magic_color" selected>🌟 Color Mágico (Fondo blanco limpio, texto nítido, logos en color)</option>
-            <option value="escala_grises">📄 Escala de Grises Nítida (Sin sombras de fondo)</option>
-            <option value="blanco_negro">🖨️ Blanco y Negro Puro (Alto contraste)</option>
-            <option value="original">📷 Foto Original (Sin filtros)</option>
-          </select>
-        </div>
-        <div style="display: flex; align-items: center; gap: 10px; padding-top: 10px;">
-          <input type="checkbox" name="autocrop" id="id_autocrop" value="1" checked style="width: 18px; height: 18px; cursor: pointer; accent-color: #2563eb;">
-          <label for="id_autocrop" style="font-size: 13px; font-weight: 600; color: #334155; cursor: pointer; margin: 0;">
-            Detectar y recortar bordes de hoja automáticamente (Deskew)
-          </label>
-        </div>
-      </div>
+      <!-- Configuración fija automática para Filtro Mágico -->
+      <input type="hidden" name="filtro_escaneo" id="id_filtro_escaneo" value="magic_color">
+      <input type="hidden" name="autocrop" id="id_autocrop" value="1">
 
       <!-- Botones de Acción de Cámara y Carga -->
       <div class="recibido-upload-buttons" style="display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 20px;">
