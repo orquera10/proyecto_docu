@@ -157,51 +157,46 @@ a {
 /* Navegación del Sidebar */
 .sidebar-nav {
   flex: 1;
-  padding: 12px 14px;
+  padding: 14px 12px;
 }
 
 .sidebar-section-title {
   font-size: 10.5px;
   font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 1px;
+  letter-spacing: 0.08em;
   color: #64748b;
-  padding: 14px 10px 8px;
+  padding: 14px 12px 6px;
 }
 
 .nav-item {
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 10px 12px;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 9px 12px;
   border-radius: var(--radius-md);
   color: #94a3b8;
   font-size: 13.5px;
   font-weight: 500;
   transition: var(--transition);
   margin-bottom: 3px;
+  text-decoration: none;
   position: relative;
 }
 
-.nav-item:hover {
-  background-color: var(--bg-sidebar-hover);
-  color: #ffffff;
+.nav-item-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+  flex: 1;
 }
 
-.nav-item.active {
-  background-color: var(--bg-sidebar-active);
-  color: #ffffff;
-  font-weight: 600;
-}
-
-.nav-item.active::after {
-  content: '';
-  width: 7px;
-  height: 7px;
-  background-color: var(--primary);
-  border-radius: 50%;
-  margin-left: auto;
-  box-shadow: 0 0 8px rgba(37, 99, 235, 0.8);
+.nav-item-left span:last-child {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .nav-item-icon {
@@ -211,73 +206,80 @@ a {
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-}
-
-/* Enlaces de Categorías */
-.category-item {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 9px 12px;
-  border-radius: var(--radius-md);
   color: #94a3b8;
-  font-size: 13px;
-  font-weight: 500;
-  transition: var(--transition);
-  margin-bottom: 3px;
+  transition: color 0.15s ease;
 }
 
-.category-item:hover {
+.nav-item:hover {
   background-color: var(--bg-sidebar-hover);
   color: #ffffff;
 }
 
-.category-left {
-  display: flex;
-  align-items: center;
-  gap: 10px;
+.nav-item:hover .nav-item-icon {
+  color: #ffffff !important;
 }
 
-.cat-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  flex-shrink: 0;
+.nav-item.active {
+  background-color: var(--bg-sidebar-active);
+  color: #ffffff;
+  font-weight: 600;
 }
 
-.cat-dot.notas { background-color: var(--cat-notas); }
-.cat-dot.informes { background-color: var(--cat-informes); }
-.cat-dot.actas { background-color: var(--cat-actas); }
+.nav-item.active .nav-item-icon {
+  color: #60a5fa !important;
+}
 
-.category-count {
+.nav-badge {
   font-size: 11px;
   font-weight: 600;
-  color: #cbd5e1;
-  background: rgba(255, 255, 255, 0.08);
-  padding: 2px 8px;
+  color: #94a3b8;
+  background: rgba(255, 255, 255, 0.07);
+  padding: 2px 7.5px;
   border-radius: var(--radius-pill);
+  flex-shrink: 0;
+  transition: var(--transition);
+  min-width: 20px;
+  text-align: center;
+}
+
+.nav-item:hover .nav-badge {
+  color: #f1f5f9;
+  background: rgba(255, 255, 255, 0.14);
+}
+
+.nav-item.active .nav-badge {
+  color: #bfdbfe;
+  background: rgba(37, 99, 235, 0.28);
+}
+
+.nav-badge.pending {
+  background: #f59e0b !important;
+  color: #000000 !important;
+  font-weight: 700 !important;
 }
 
 /* Pie de usuario en el Sidebar */
 .sidebar-footer {
-  padding: 16px 14px 20px;
+  padding: 14px 12px 18px;
   border-top: 1px solid var(--border-dark);
 }
 
 .user-profile-card {
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 8px;
+  gap: 10px;
+  padding: 8px 10px;
   border-radius: var(--radius-md);
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.05);
   transition: var(--transition);
 }
 
 .user-avatar-circle {
-  width: 36px;
-  height: 36px;
+  width: 34px;
+  height: 34px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #1e3a8a, #2563eb);
+  background: linear-gradient(135deg, #1d4ed8, #2563eb);
   color: #ffffff;
   display: flex;
   align-items: center;
@@ -294,7 +296,7 @@ a {
 }
 
 .user-name-text {
-  font-size: 13px;
+  font-size: 12.5px;
   font-weight: 600;
   color: #ffffff;
   white-space: nowrap;
@@ -303,9 +305,12 @@ a {
 }
 
 .user-role-text {
-  font-size: 11px;
-  color: #94a3b8;
+  font-size: 10.5px;
+  color: #64748b;
   margin-top: 1px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .logout-icon-link {
@@ -320,7 +325,7 @@ a {
 
 .logout-icon-link:hover {
   color: #ef4444;
-  background: rgba(239, 68, 68, 0.1);
+  background: rgba(239, 68, 68, 0.15);
 }
 
 /* ─── Contenedor Principal ───────────────────────────────────────────────── */
