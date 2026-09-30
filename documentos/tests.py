@@ -967,4 +967,51 @@ class MesaEntradaNotasRecibidasTests(TestCase):
         self.assertTrue(adj.es_pdf)
 
 
+class DashboardYBusquedaGlobalTests(TestCase):
+    def setUp(self):
+        self.user = User.objects.create_user(username='admin_test', password='password123')
+        self.client.force_login(self.user)
+
+        self.doc_emitido = Documento.objects.create(
+            tipo='NOTA',
+            fecha=date(2026, 9, 30),
+            asunto='Solicitud de switches de red',
+            remitente='Área de Informática',
+            destinatario='Dirección General',
+            cuerpo='Solicitud formal de equipamiento.',
+            estado='EMITIDO',
+            creado_por=self.user,
+        )
+
+        self.nota_recibida = NotaRecibida.objects.create(
+            numero_registro='REC-2026-0099',
+            numero_origen='Expte N° 4501/26',
+            remitente_origen='Secretaría de Niñez y Familia',
+            fecha_recepcion=date(2026, 9, 30),
+            asunto='Solicitud de monitores e insumos informáticos',
+            descripcion='Nota recibida requiriendo insumos técnicos.',
+            estado='PENDIENTE',
+            recibido_por=self.user,
+        )
+
+    def test_dashboard_incluye_notas_recibidas(self):
+        response = self.client.get('/')
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.context['total_recibidas'], 1)
+        self.assertEqual(response.context['recibidas_pendientes'], 1)
+        self.assertIn(self.nota_recibida, response.context['recibidas_recientes'])
+        self.assertContains(response, 'REC-2026-0099')
+        self.assertContains(response, 'Secretaría de Niñez y Familia')
+
+    def test_busqueda_general_incluye_documentos_y_notas_recibidas(self):
+        # Búsqueda por término común en ambas o específico de notas recibidas
+        response = self.client.get('/documentos/?q=insumos')
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.context['total_recibidas_encontradas'], 1)
+        self.assertIn(self.nota_recibida, response.context['notas_recibidas_coincidentes'])
+        self.assertContains(response, 'REC-2026-0099')
+        self.assertContains(response, 'Mesa de Entrada – Notas Recibidas coincidentes')
+
+
+
 

@@ -229,12 +229,20 @@ def dashboard(request):
     entregados = Documento.objects.filter(estado='ENTREGADO').count()
     recientes = Documento.objects.select_related('creado_por').order_by('-creado_en')[:6]
 
+    # Mesa de Entrada / Notas Recibidas
+    total_recibidas = NotaRecibida.objects.count()
+    recibidas_pendientes = NotaRecibida.objects.filter(estado='PENDIENTE').count()
+    recibidas_recientes = NotaRecibida.objects.select_related('recibido_por', 'documento_respuesta').order_by('-creado_en')[:6]
+
     return render(request, 'documentos/dashboard.html', {
         'total': total,
         'por_tipo': por_tipo,
         'emitidos': emitidos,
         'entregados': entregados,
         'recientes': recientes,
+        'total_recibidas': total_recibidas,
+        'recibidas_pendientes': recibidas_pendientes,
+        'recibidas_recientes': recibidas_recientes,
     })
 
 
@@ -248,7 +256,10 @@ def lista_documentos(request):
     estado = request.GET.get('estado', '')
     anio = request.GET.get('anio', '')
     periodo = request.GET.get('periodo', '')
-    busqueda = request.GET.get('q', '')
+    busqueda = request.GET.get('q', '').strip()
+
+    notas_recibidas_coincidentes = []
+    total_recibidas_encontradas = 0
 
     if tipo:
         qs = qs.filter(tipo=tipo)
@@ -274,6 +285,16 @@ def lista_documentos(request):
             Q(remitente__icontains=busqueda) |
             Q(destinatario__icontains=busqueda)
         )
+        # Búsqueda integrada también en Mesa de Entrada (Notas Recibidas)
+        recibidas_qs = NotaRecibida.objects.select_related('recibido_por', 'documento_respuesta').filter(
+            Q(numero_registro__icontains=busqueda) |
+            Q(numero_origen__icontains=busqueda) |
+            Q(remitente_origen__icontains=busqueda) |
+            Q(asunto__icontains=busqueda) |
+            Q(descripcion__icontains=busqueda)
+        )
+        total_recibidas_encontradas = recibidas_qs.count()
+        notas_recibidas_coincidentes = list(recibidas_qs[:10])
 
     # Ordenamiento
     orden = request.GET.get('orden', 'fecha')
@@ -338,6 +359,8 @@ def lista_documentos(request):
         'dir': direccion,
         'busqueda': busqueda,
         'anios': [d.year for d in anios],
+        'notas_recibidas_coincidentes': notas_recibidas_coincidentes,
+        'total_recibidas_encontradas': total_recibidas_encontradas,
     })
 
 

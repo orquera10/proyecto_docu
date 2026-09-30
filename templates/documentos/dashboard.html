@@ -16,23 +16,54 @@
     <h2>¡Bienvenido al Panel de Docu!</h2>
     <p>Plataforma integral para la emisión, redacción y seguimiento de notas técnicas, informes y actas de entrega, con digitalización inteligente de mesa de entrada y control de documentos firmados.</p>
   </div>
-  <a href="{% url 'crear_documento' %}" class="btn btn-primary" style="padding: 11px 22px; font-size: 13.5px;">
-    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-      <polyline points="14 2 14 8 20 8"></polyline>
-      <line x1="12" y1="18" x2="12" y2="12"></line>
-      <line x1="9" y1="15" x2="15" y2="15"></line>
-    </svg>
-    <span>Redactar Documento</span>
-  </a>
+  <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+    <a href="{% url 'crear_documento' %}" class="btn btn-primary" style="padding: 10px 18px; font-size: 13.5px; display: inline-flex; align-items: center; gap: 7px;">
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+        <polyline points="14 2 14 8 20 8"></polyline>
+        <line x1="12" y1="18" x2="12" y2="12"></line>
+        <line x1="9" y1="15" x2="15" y2="15"></line>
+      </svg>
+      <span>Redactar Documento</span>
+    </a>
+    <a href="{% url 'crear_nota_recibida' %}" class="btn" style="padding: 10px 18px; font-size: 13.5px; display: inline-flex; align-items: center; gap: 7px; background: rgba(255,255,255,0.14); color: #ffffff; border: 1px solid rgba(255,255,255,0.3); backdrop-filter: blur(4px);">
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path>
+        <circle cx="12" cy="13" r="4"></circle>
+      </svg>
+      <span>Ingresar Nota Recibida</span>
+    </a>
+  </div>
 </section>
 
-<!-- Fila de 3 Tarjetas Métricas Grandes -->
+<!-- Fila de 4 Tarjetas Métricas Grandes -->
 <div class="metrics-row">
-  <!-- Card 1: Notas -->
-  <div class="metric-card">
+  <!-- Card 1: Mesa de Entrada / Notas Recibidas -->
+  <a href="{% url 'lista_notas_recibidas' %}" class="metric-card" style="text-decoration: none; color: inherit;">
     <div class="metric-card-top">
-      <span class="metric-label">Notas</span>
+      <span class="metric-label">Notas Recibidas</span>
+      <div class="metric-icon-box purple" style="background: #eef2ff; color: #4f46e5;">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
+          <polyline points="22,6 12,13 2,6"></polyline>
+        </svg>
+      </div>
+    </div>
+    <div style="display: flex; align-items: baseline; justify-content: space-between; gap: 8px;">
+      <div class="metric-value">{{ total_recibidas }}</div>
+      {% if recibidas_pendientes > 0 %}
+        <span class="badge" style="background: #fef3c7; color: #92400e; border: 1px solid #fde68a; font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 12px;">
+          {{ recibidas_pendientes }} pendiente{{ recibidas_pendientes|pluralize }}
+        </span>
+      {% endif %}
+    </div>
+    <div class="metric-subtitle">Mesa de entrada e ingresos externos</div>
+  </a>
+
+  <!-- Card 2: Notas Emitidas -->
+  <a href="{% url 'lista_documentos' %}?tipo=NOTA" class="metric-card" style="text-decoration: none; color: inherit;">
+    <div class="metric-card-top">
+      <span class="metric-label">Notas Emitidas</span>
       <div class="metric-icon-box blue">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
@@ -45,10 +76,10 @@
     </div>
     <div class="metric-value">{{ por_tipo.NOTA }}</div>
     <div class="metric-subtitle">Notas de coordinación técnica</div>
-  </div>
+  </a>
 
-  <!-- Card 2: Informes -->
-  <div class="metric-card">
+  <!-- Card 3: Informes -->
+  <a href="{% url 'lista_documentos' %}?tipo=INFORME" class="metric-card" style="text-decoration: none; color: inherit;">
     <div class="metric-card-top">
       <span class="metric-label">Informes</span>
       <div class="metric-icon-box green">
@@ -61,10 +92,10 @@
     </div>
     <div class="metric-value">{{ por_tipo.INFORME }}</div>
     <div class="metric-subtitle">Monitoreo y mantenimientos</div>
-  </div>
+  </a>
 
-  <!-- Card 3: Actas de Entrega -->
-  <div class="metric-card">
+  <!-- Card 4: Actas de Entrega -->
+  <a href="{% url 'lista_documentos' %}?tipo=ACTA" class="metric-card" style="text-decoration: none; color: inherit;">
     <div class="metric-card-top">
       <span class="metric-label">Actas de Entrega</span>
       <div class="metric-icon-box orange">
@@ -76,53 +107,109 @@
     </div>
     <div class="metric-value">{{ por_tipo.ACTA }}</div>
     <div class="metric-subtitle">Hardware y activos TI asignados</div>
-  </div>
+  </a>
 </div>
 
-<!-- Layout a 2 Columnas: Documentos Recientes + Accesos Rápidos -->
+<!-- Layout a 2 Columnas: Documentos / Ingresos Recientes + Accesos Rápidos -->
 <div class="dashboard-grid">
-  <!-- Columna Izquierda: Documentos Recientes -->
+  <!-- Columna Izquierda: Actividad Reciente con Pestañas -->
   <div class="ui-card">
-    <div class="ui-card-header">
-      <div>
-        <div class="ui-card-title">Documentos Recientes</div>
-        <div class="ui-card-subtitle">Últimos documentos creados y modificados en el sistema</div>
+    <div class="ui-card-header" style="flex-wrap: wrap; gap: 12px; align-items: center;">
+      <div style="display: flex; align-items: center; gap: 8px;">
+        <button type="button" id="tab-btn-emitidos" onclick="switchDashTab('emitidos')" class="dash-tab-btn active">
+          <span>Documentos Emitidos</span>
+          <span class="dash-tab-badge">{{ total }}</span>
+        </button>
+        <button type="button" id="tab-btn-recibidos" onclick="switchDashTab('recibidos')" class="dash-tab-btn">
+          <span>Notas Recibidas</span>
+          <span class="dash-tab-badge purple">{{ total_recibidas }}</span>
+        </button>
       </div>
-      <a href="{% url 'lista_documentos' %}" style="color: var(--primary); font-size: 13px; font-weight: 600; display: inline-flex; align-items: center; gap: 4px;">
-        Ver todos
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-          <polyline points="9 18 15 12 9 6"></polyline>
-        </svg>
-      </a>
+      <div id="dash-see-all-container">
+        <a id="dash-see-all-link" href="{% url 'lista_documentos' %}" style="color: var(--primary); font-size: 13px; font-weight: 600; display: inline-flex; align-items: center; gap: 4px;">
+          <span>Ver todos los emitidos</span>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="9 18 15 12 9 6"></polyline>
+          </svg>
+        </a>
+      </div>
     </div>
 
-    {% if recientes %}
-      <div class="recent-docs-list">
-        {% for doc in recientes %}
-          <a href="{% url 'detalle_documento' doc.pk %}" class="recent-doc-row">
-            <div class="recent-doc-top">
-              <div class="recent-doc-meta">
-                <span class="recent-doc-num">{{ doc.numero }}</span>
-                <span class="recent-doc-dot">•</span>
-                <span class="recent-doc-type">{{ doc.get_tipo_display }}</span>
+    <!-- Panel 1: Documentos Emitidos Recientes -->
+    <div id="dash-panel-emitidos" class="dash-panel">
+      {% if recientes %}
+        <div class="recent-docs-list">
+          {% for doc in recientes %}
+            <a href="{% url 'detalle_documento' doc.pk %}" class="recent-doc-row">
+              <div class="recent-doc-top">
+                <div class="recent-doc-meta">
+                  <span class="recent-doc-num">{{ doc.numero }}</span>
+                  <span class="recent-doc-dot">•</span>
+                  <span class="recent-doc-type">{{ doc.get_tipo_display }}</span>
+                </div>
+                <span class="badge badge-{{ doc.estado|lower }}">{{ doc.get_estado_display }}</span>
               </div>
-              <span class="badge badge-{{ doc.estado|lower }}">{{ doc.get_estado_display }}</span>
-            </div>
-            <div class="recent-doc-title">{{ doc.asunto }}</div>
-            <div class="recent-doc-bottom">
-              <span>Destinatario: {{ doc.destinatario|default:"No especificado"|truncatechars:45 }}</span>
-              <span style="color: #cbd5e1;">|</span>
-              <span>{{ doc.fecha|date:"d M Y" }}</span>
-            </div>
-          </a>
-        {% endfor %}
-      </div>
-    {% else %}
-      <div style="text-align: center; padding: 40px 20px; color: var(--text-muted);">
-        <p style="font-size: 14px; margin-bottom: 14px;">No hay documentos registrados aún.</p>
-        <a href="{% url 'crear_documento' %}" class="btn btn-primary btn-sm">Crear el primer documento</a>
-      </div>
-    {% endif %}
+              <div class="recent-doc-title">{{ doc.asunto }}</div>
+              <div class="recent-doc-bottom">
+                <span>Destinatario: {{ doc.destinatario|default:"No especificado"|truncatechars:45 }}</span>
+                <span style="color: #cbd5e1;">|</span>
+                <span>{{ doc.fecha|date:"d M Y" }}</span>
+              </div>
+            </a>
+          {% endfor %}
+        </div>
+      {% else %}
+        <div style="text-align: center; padding: 40px 20px; color: var(--text-muted);">
+          <p style="font-size: 14px; margin-bottom: 14px;">No hay documentos emitidos registrados aún.</p>
+          <a href="{% url 'crear_documento' %}" class="btn btn-primary btn-sm">Redactar el primer documento</a>
+        </div>
+      {% endif %}
+    </div>
+
+    <!-- Panel 2: Notas Recibidas Recientes -->
+    <div id="dash-panel-recibidos" class="dash-panel" style="display: none;">
+      {% if recibidas_recientes %}
+        <div class="recent-docs-list">
+          {% for nota in recibidas_recientes %}
+            <a href="{% url 'detalle_nota_recibida' nota.pk %}" class="recent-doc-row">
+              <div class="recent-doc-top">
+                <div class="recent-doc-meta">
+                  <span class="recent-doc-num" style="color: #4f46e5; background: #eef2ff;">{{ nota.numero_registro }}</span>
+                  {% if nota.numero_origen %}
+                    <span class="recent-doc-dot">•</span>
+                    <span style="font-size: 12px; color: var(--text-muted); font-weight: 500;">Ref: {{ nota.numero_origen }}</span>
+                  {% endif %}
+                </div>
+                {% if nota.estado == 'PENDIENTE' %}
+                  <span class="badge" style="background: #fef3c7; color: #92400e; border: 1px solid #fde68a;">Pendiente</span>
+                {% elif nota.estado == 'EN_TRAMITE' %}
+                  <span class="badge" style="background: #e0f2fe; color: #0369a1; border: 1px solid #bae6fd;">En Trámite</span>
+                {% elif nota.estado == 'RESPONDIDO' %}
+                  <span class="badge" style="background: #dcfce7; color: #15803d; border: 1px solid #bbf7d0;">Respondida</span>
+                {% elif nota.estado == 'ARCHIVADO' %}
+                  <span class="badge" style="background: #f1f5f9; color: #475569; border: 1px solid #e2e8f0;">Archivada</span>
+                {% endif %}
+              </div>
+              <div class="recent-doc-title">{{ nota.asunto }}</div>
+              <div class="recent-doc-bottom">
+                <span>Remitente: <strong>{{ nota.remitente_origen|truncatechars:45 }}</strong></span>
+                <span style="color: #cbd5e1;">|</span>
+                <span>Recibido: {{ nota.fecha_recepcion|date:"d M Y" }}</span>
+                {% if nota.recibido_por %}
+                  <span style="color: #cbd5e1;">|</span>
+                  <span>Por: {{ nota.recibido_por.get_full_name|default:nota.recibido_por.username }}</span>
+                {% endif %}
+              </div>
+            </a>
+          {% endfor %}
+        </div>
+      {% else %}
+        <div style="text-align: center; padding: 40px 20px; color: var(--text-muted);">
+          <p style="font-size: 14px; margin-bottom: 14px;">No hay notas registradas en Mesa de Entrada aún.</p>
+          <a href="{% url 'crear_nota_recibida' %}" class="btn btn-primary btn-sm">Ingresar la primera nota</a>
+        </div>
+      {% endif %}
+    </div>
   </div>
 
   <!-- Columna Derecha: Accesos Rápidos -->
@@ -130,74 +217,118 @@
     <div class="ui-card-header" style="margin-bottom: 14px;">
       <div>
         <div class="ui-card-title">Accesos Rápidos</div>
-        <div class="ui-card-subtitle">Generación acelerada de actas e informes comunes</div>
+        <div class="ui-card-subtitle">Flujos acelerados de emisión e ingreso de notas</div>
       </div>
     </div>
 
-      <!-- 1. Solicitud de Insumos y Hardware (SNAF) -->
-      <a href="{% url 'crear_documento' %}?plantilla=insumos" class="quick-access-item">
-        <div class="quick-access-icon purple" style="background: #f3e8ff; color: #7e22ce;">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-            <polyline points="14 2 14 8 20 8"></polyline>
-            <line x1="16" y1="13" x2="8" y2="13"></line>
-            <line x1="16" y1="17" x2="8" y2="17"></line>
-          </svg>
-        </div>
-        <div class="quick-access-text">
-          <div class="quick-access-title">Solicitud de Insumos TI</div>
-          <div class="quick-access-desc">Nota de pedido oficial (Dra. Marta Iriarte)</div>
-        </div>
-        <div class="quick-access-plus">+</div>
-      </a>
+    <!-- 0. Mesa de Entrada / Escanear Nota Recibida -->
+    <a href="{% url 'crear_nota_recibida' %}" class="quick-access-item" style="border-left: 3px solid #6366f1;">
+      <div class="quick-access-icon" style="background: #eef2ff; color: #4f46e5;">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path>
+          <circle cx="12" cy="13" r="4"></circle>
+        </svg>
+      </div>
+      <div class="quick-access-text">
+        <div class="quick-access-title">Ingresar / Escanear Nota Recibida</div>
+        <div class="quick-access-desc">Digitalizar correspondencia de Mesa de Entrada</div>
+      </div>
+      <div class="quick-access-plus" style="background: #eef2ff; color: #4f46e5;">+</div>
+    </a>
 
-      <!-- 2. Acta de Asignación de Laptop -->
-      <a href="{% url 'crear_documento' %}?plantilla=laptop" class="quick-access-item">
-        <div class="quick-access-icon blue">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
-            <line x1="2" y1="20" x2="22" y2="20"></line>
-          </svg>
-        </div>
-        <div class="quick-access-text">
-          <div class="quick-access-title">Acta de Asignación de Laptop</div>
-          <div class="quick-access-desc">Entrega de equipo a personal nuevo</div>
-        </div>
-        <div class="quick-access-plus">+</div>
-      </a>
+    <!-- 1. Solicitud de Insumos y Hardware (SNAF) -->
+    <a href="{% url 'crear_documento' %}?plantilla=insumos" class="quick-access-item">
+      <div class="quick-access-icon purple" style="background: #f3e8ff; color: #7e22ce;">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+          <polyline points="14 2 14 8 20 8"></polyline>
+          <line x1="16" y1="13" x2="8" y2="13"></line>
+          <line x1="16" y1="17" x2="8" y2="17"></line>
+        </svg>
+      </div>
+      <div class="quick-access-text">
+        <div class="quick-access-title">Solicitud de Insumos TI</div>
+        <div class="quick-access-desc">Nota de pedido oficial (Dra. Marta Iriarte)</div>
+      </div>
+      <div class="quick-access-plus">+</div>
+    </a>
 
-      <!-- 3. Mantenimiento Preventivo -->
-      <a href="{% url 'crear_documento' %}?plantilla=mantenimiento" class="quick-access-item">
-        <div class="quick-access-icon green">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
-            <polyline points="22 4 12 14.01 9 11.01"></polyline>
-          </svg>
-        </div>
-        <div class="quick-access-text">
-          <div class="quick-access-title">Mantenimiento Preventivo</div>
-          <div class="quick-access-desc">Informe periódico de servidores</div>
-        </div>
-        <div class="quick-access-plus">+</div>
-      </a>
+    <!-- 2. Acta de Asignación de Laptop -->
+    <a href="{% url 'crear_documento' %}?plantilla=laptop" class="quick-access-item">
+      <div class="quick-access-icon blue">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
+          <line x1="2" y1="20" x2="22" y2="20"></line>
+        </svg>
+      </div>
+      <div class="quick-access-text">
+        <div class="quick-access-title">Acta de Asignación de Laptop</div>
+        <div class="quick-access-desc">Entrega de equipo a personal nuevo</div>
+      </div>
+      <div class="quick-access-plus">+</div>
+    </a>
 
-      <!-- 4. Reporte de Incidente Crítico -->
-      <a href="{% url 'crear_documento' %}?plantilla=incidente" class="quick-access-item">
-        <div class="quick-access-icon orange">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
-            <line x1="12" y1="9" x2="12" y2="13"></line>
-            <line x1="12" y1="17" x2="12.01" y2="17"></line>
-          </svg>
-        </div>
-        <div class="quick-access-text">
-          <div class="quick-access-title">Reporte de Incidente Crítico</div>
-          <div class="quick-access-desc">Caídas, fallas severas o problemas de red</div>
-        </div>
-        <div class="quick-access-plus">+</div>
-      </a>
-    </div>
+    <!-- 3. Mantenimiento Preventivo -->
+    <a href="{% url 'crear_documento' %}?plantilla=mantenimiento" class="quick-access-item">
+      <div class="quick-access-icon green">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+          <polyline points="22 4 12 14.01 9 11.01"></polyline>
+        </svg>
+      </div>
+      <div class="quick-access-text">
+        <div class="quick-access-title">Mantenimiento Preventivo</div>
+        <div class="quick-access-desc">Informe periódico de servidores</div>
+      </div>
+      <div class="quick-access-plus">+</div>
+    </a>
+
+    <!-- 4. Reporte de Incidente Crítico -->
+    <a href="{% url 'crear_documento' %}?plantilla=incidente" class="quick-access-item">
+      <div class="quick-access-icon orange">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
+          <line x1="12" y1="9" x2="12" y2="13"></line>
+          <line x1="12" y1="17" x2="12.01" y2="17"></line>
+        </svg>
+      </div>
+      <div class="quick-access-text">
+        <div class="quick-access-title">Reporte de Incidente Crítico</div>
+        <div class="quick-access-desc">Caídas, fallas severas o problemas de red</div>
+      </div>
+      <div class="quick-access-plus">+</div>
+    </a>
   </div>
 </div>
+
+<script>
+function switchDashTab(tab) {
+  const btnEmitidos = document.getElementById('tab-btn-emitidos');
+  const btnRecibidos = document.getElementById('tab-btn-recibidos');
+  const panelEmitidos = document.getElementById('dash-panel-emitidos');
+  const panelRecibidos = document.getElementById('dash-panel-recibidos');
+  const seeAllLink = document.getElementById('dash-see-all-link');
+
+  if (tab === 'recibidos') {
+    btnEmitidos.classList.remove('active');
+    btnRecibidos.classList.add('active');
+    panelEmitidos.style.display = 'none';
+    panelRecibidos.style.display = 'block';
+    if (seeAllLink) {
+      seeAllLink.href = "{% url 'lista_notas_recibidas' %}";
+      seeAllLink.querySelector('span').textContent = 'Ver todas las notas recibidas';
+    }
+  } else {
+    btnRecibidos.classList.remove('active');
+    btnEmitidos.classList.add('active');
+    panelRecibidos.style.display = 'none';
+    panelEmitidos.style.display = 'block';
+    if (seeAllLink) {
+      seeAllLink.href = "{% url 'lista_documentos' %}";
+      seeAllLink.querySelector('span').textContent = 'Ver todos los emitidos';
+    }
+  }
+}
+</script>
 
 {% endblock %}

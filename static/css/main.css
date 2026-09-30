@@ -706,19 +706,25 @@ a {
   line-height: 1.5;
 }
 
-/* Fila de 3 Tarjetas Métricas */
+/* Fila de Tarjetas Métricas (Dashboard) */
 .metrics-row {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 20px;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 18px;
   margin-bottom: 28px;
+}
+
+@media (max-width: 1200px) {
+  .metrics-row {
+    grid-template-columns: repeat(2, 1fr);
+  }
 }
 
 .metric-card {
   background: var(--bg-card);
   border: 1px solid var(--border-color);
   border-radius: var(--radius-lg);
-  padding: 22px 24px;
+  padding: 20px 22px;
   box-shadow: var(--shadow-card);
   display: flex;
   flex-direction: column;
@@ -755,9 +761,10 @@ a {
 .metric-icon-box.blue { background: #eff6ff; color: #2563eb; }
 .metric-icon-box.green { background: #ecfdf5; color: #10b981; }
 .metric-icon-box.orange { background: #fffbeb; color: #f59e0b; }
+.metric-icon-box.purple { background: #eef2ff; color: #4f46e5; }
 
 .metric-value {
-  font-size: 34px;
+  font-size: 32px;
   font-weight: 800;
   color: var(--text-main);
   line-height: 1;
@@ -768,6 +775,59 @@ a {
 .metric-subtitle {
   font-size: 12px;
   color: var(--text-muted);
+}
+
+/* Dashboard Tabs */
+.dash-tab-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 14px;
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+  background: #f8fafc;
+  color: var(--text-muted);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.dash-tab-btn:hover {
+  background: #f1f5f9;
+  color: var(--text-main);
+}
+
+.dash-tab-btn.active {
+  background: #ffffff;
+  border-color: var(--primary);
+  color: var(--primary);
+  box-shadow: 0 2px 6px rgba(37, 99, 235, 0.12);
+}
+
+.dash-tab-badge {
+  display: inline-block;
+  padding: 1px 7px;
+  border-radius: 9999px;
+  font-size: 11px;
+  font-weight: 700;
+  background: #e2e8f0;
+  color: #475569;
+}
+
+.dash-tab-btn.active .dash-tab-badge {
+  background: #eff6ff;
+  color: var(--primary);
+}
+
+.dash-tab-badge.purple {
+  background: #ede9fe;
+  color: #6d28d9;
+}
+
+.dash-tab-btn.active .dash-tab-badge.purple {
+  background: #e0e7ff;
+  color: #4338ca;
 }
 
 /* Dashboard a 2 columnas */

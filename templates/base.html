@@ -226,8 +226,8 @@
             type="text"
             name="q"
             class="topbar-search-input"
-            placeholder="Buscar documentos..."
-            value="{{ busqueda|default:'' }}"
+            placeholder="Buscar emitidos o notas recibidas..."
+            value="{% if busqueda %}{{ busqueda }}{% elif q %}{{ q }}{% endif %}"
           >
         </form>
 
