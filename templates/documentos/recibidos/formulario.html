@@ -139,7 +139,23 @@
         </div>
 
         <div class="form-field-group" style="margin: 0;">
-          <label class="form-field-label">Vincular con Documento de Respuesta (Salida)</label>
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+            <label class="form-field-label" style="margin-bottom: 0;">Vincular con Documento de Respuesta (Salida)</label>
+            <span id="doc-resp-badge-count" style="font-size: 11px; font-weight: 600; color: #64748b; background: #f1f5f9; padding: 2px 8px; border-radius: 9999px; display: inline-flex; align-items: center; gap: 4px;"></span>
+          </div>
+
+          <!-- Buscador en tiempo real de documento de respuesta -->
+          <div style="position: relative; margin-bottom: 6px;">
+            <div style="position: absolute; left: 10px; top: 50%; transform: translateY(-50%); pointer-events: none; color: #94a3b8; display: flex; align-items: center;">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="11" cy="11" r="8"></circle>
+                <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+              </svg>
+            </div>
+            <input type="text" id="buscador_doc_respuesta" placeholder="🔍 Buscar por número, asunto o fecha..." class="form-input-styled" style="padding-left: 32px; padding-right: 32px; font-size: 12.5px; height: 34px; background: #f8fafc;" autocomplete="off">
+            <button type="button" id="btn_limpiar_busqueda_doc" onclick="limpiarBusquedaDocRespuesta()" style="display: none; position: absolute; right: 8px; top: 50%; transform: translateY(-50%); background: none; border: none; color: #94a3b8; cursor: pointer; padding: 2px 6px; font-size: 14px; font-weight: bold; border-radius: 4px;" title="Limpiar búsqueda">✕</button>
+          </div>
+
           <select name="documento_respuesta" id="id_documento_respuesta" class="form-input-styled">
             <option value="">-- Sin documento de respuesta vinculado --</option>
             {% for doc in form.fields.documento_respuesta.queryset %}
@@ -148,7 +164,10 @@
               </option>
             {% endfor %}
           </select>
-          <span style="font-size: 11px; color: var(--text-muted); margin-top: 4px; display: block;">Permite asociar una Nota o Informe que se emitió para dar respuesta a esta nota.</span>
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 4px;">
+            <span style="font-size: 11px; color: var(--text-muted); display: block;">Permite asociar una Nota o Informe que se emitió para dar respuesta a esta nota.</span>
+            <span id="doc-resp-feedback" style="font-size: 11px; color: #3b82f6; font-weight: 500;"></span>
+          </div>
           {% if form.documento_respuesta.errors %}<div style="color:#ef4444;font-size:12px;margin-top:4px;">{{ form.documento_respuesta.errors }}</div>{% endif %}
         </div>
       </div>
@@ -389,6 +408,160 @@ document.getElementById('recibido-form').addEventListener('submit', function(e) 
       );
     }
   }
+});
+
+// --- Buscador en tiempo real de Documento de Respuesta ---
+let opcionesDocRespuestaOriginales = [];
+
+function inicializarBuscadorDocRespuesta() {
+  const select = document.getElementById('id_documento_respuesta');
+  const inputBuscador = document.getElementById('buscador_doc_respuesta');
+  const badgeCount = document.getElementById('doc-resp-badge-count');
+  if (!select || !inputBuscador) return;
+
+  // Guardar opciones originales
+  opcionesDocRespuestaOriginales = Array.from(select.options).map(opt => ({
+    value: opt.value,
+    text: opt.text,
+    selected: opt.selected
+  }));
+
+  const totalDocs = opcionesDocRespuestaOriginales.filter(o => o.value !== '').length;
+  if (badgeCount) {
+    badgeCount.textContent = `${totalDocs} docs disponibles`;
+  }
+
+  inputBuscador.addEventListener('input', function(e) {
+    filtrarDocumentosRespuesta(e.target.value);
+  });
+
+  inputBuscador.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+      limpiarBusquedaDocRespuesta();
+    } else if (e.key === 'Enter') {
+      e.preventDefault();
+      // Si hay resultados además del vacío, seleccionar el primero y enfocar select
+      if (select.options.length > 1) {
+        select.selectedIndex = 1;
+        select.focus();
+      }
+    }
+  });
+}
+
+function normalizarTexto(texto) {
+  return (texto || '')
+    .toString()
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .trim();
+}
+
+function filtrarDocumentosRespuesta(termino) {
+  const select = document.getElementById('id_documento_respuesta');
+  const btnLimpiar = document.getElementById('btn_limpiar_busqueda_doc');
+  const feedback = document.getElementById('doc-resp-feedback');
+  const badgeCount = document.getElementById('doc-resp-badge-count');
+  if (!select) return;
+
+  const valorActual = select.value;
+  const q = normalizarTexto(termino);
+
+  if (btnLimpiar) {
+    btnLimpiar.style.display = q.length > 0 ? 'inline-block' : 'none';
+  }
+
+  select.innerHTML = '';
+
+  const totalDocs = opcionesDocRespuestaOriginales.filter(o => o.value !== '').length;
+
+  if (!q) {
+    // Restaurar todas las opciones
+    opcionesDocRespuestaOriginales.forEach(optData => {
+      const opt = document.createElement('option');
+      opt.value = optData.value;
+      opt.textContent = optData.text;
+      if (optData.value === valorActual) {
+        opt.selected = true;
+      }
+      select.appendChild(opt);
+    });
+    if (feedback) feedback.textContent = '';
+    if (badgeCount) badgeCount.textContent = `${totalDocs} docs disponibles`;
+    return;
+  }
+
+  // Filtrar
+  const palabras = q.split(/\s+/).filter(Boolean);
+  
+  // Siempre agregar la opción vacía al principio
+  const optVacia = document.createElement('option');
+  optVacia.value = '';
+  optVacia.textContent = '-- Sin documento de respuesta vinculado --';
+  select.appendChild(optVacia);
+
+  let coincidencias = 0;
+  let valorSiguePresente = (valorActual === '');
+
+  opcionesDocRespuestaOriginales.forEach(optData => {
+    if (optData.value === '') return;
+    
+    const textoNorm = normalizarTexto(optData.text);
+    const coincide = palabras.every(palabra => textoNorm.includes(palabra));
+
+    if (coincide) {
+      coincidencias++;
+      const opt = document.createElement('option');
+      opt.value = optData.value;
+      opt.textContent = optData.text;
+      if (optData.value === valorActual) {
+        opt.selected = true;
+        valorSiguePresente = true;
+      }
+      select.appendChild(opt);
+    }
+  });
+
+  // Si había un documento seleccionado que no coincidió con el filtro, agregarlo marcado para no perder la selección
+  if (valorActual && !valorSiguePresente) {
+    const optActualData = opcionesDocRespuestaOriginales.find(o => o.value === valorActual);
+    if (optActualData) {
+      const opt = document.createElement('option');
+      opt.value = optActualData.value;
+      opt.textContent = `[Seleccionado] ${optActualData.text}`;
+      opt.selected = true;
+      select.appendChild(opt);
+    }
+  }
+
+  if (badgeCount) {
+    badgeCount.textContent = `${coincidencias} de ${totalDocs}`;
+  }
+
+  if (feedback) {
+    if (coincidencias === 0) {
+      feedback.textContent = 'Sin resultados';
+      feedback.style.color = '#ef4444';
+    } else {
+      feedback.textContent = `${coincidencias} coincidencia${coincidencias > 1 ? 's' : ''}`;
+      feedback.style.color = '#2563eb';
+    }
+  }
+}
+
+function limpiarBusquedaDocRespuesta() {
+  const inputBuscador = document.getElementById('buscador_doc_respuesta');
+  if (inputBuscador) {
+    inputBuscador.value = '';
+    filtrarDocumentosRespuesta('');
+    inputBuscador.focus();
+  }
+}
+
+// Inicializar al cargar el DOM
+document.addEventListener('DOMContentLoaded', function() {
+  inicializarBuscadorDocRespuesta();
 });
 
 </script>

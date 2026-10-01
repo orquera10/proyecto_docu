@@ -1190,6 +1190,50 @@ class IndentacionTests(TestCase):
         self.assertContains(resp, 'Sangría (Tab)')
         self.assertContains(resp, "formatVisual('indent')")
 
+    def test_formulario_recibido_contiene_buscador_doc_respuesta(self):
+        resp = self.client.get('/recibidos/nuevo/')
+        self.assertEqual(resp.status_code, 200)
+        self.assertContains(resp, 'id="buscador_doc_respuesta"')
+        self.assertContains(resp, 'id="btn_limpiar_busqueda_doc"')
+        self.assertContains(resp, 'filtrarDocumentosRespuesta')
+        self.assertContains(resp, 'inicializarBuscadorDocRespuesta')
+        self.assertContains(resp, 'id="id_documento_respuesta"')
+
+    def test_renglones_en_blanco_cuerpo_html(self):
+        # Separación de párrafo estándar (\n\n) -> sin renglón en blanco extra
+        html_std = cuerpo_html("Párrafo 1\n\nPárrafo 2")
+        self.assertIn('<p style="margin-bottom:6pt;">Párrafo 1</p>', html_std)
+        self.assertIn('<p style="margin-bottom:6pt;">Párrafo 2</p>', html_std)
+        self.assertNotIn('&nbsp;', html_std)
+
+        # 1 renglón en blanco intencional (\n\n\n) -> un párrafo vacío &nbsp;
+        html_1_blank = cuerpo_html("Párrafo 1\n\n\nPárrafo 2")
+        self.assertEqual(html_1_blank.count('&nbsp;'), 1)
+        self.assertIn('<p style="margin-bottom:6pt;">&nbsp;</p>', html_1_blank)
+
+        # 2 renglones en blanco intencionales (\n\n\n\n) -> dos párrafos vacíos &nbsp;
+        html_2_blanks = cuerpo_html("Párrafo 1\n\n\n\nPárrafo 2")
+        self.assertEqual(html_2_blanks.count('&nbsp;'), 2)
+
+    def test_documento_con_renglones_en_blanco_pdf(self):
+        doc = Documento.objects.create(
+            tipo='NOTA',
+            fecha=date(2026, 10, 1),
+            asunto='Nota con renglones en blanco',
+            remitente='Área de Informática',
+            destinatario_cargo='A LA SECRETARIA DE NIÑEZ',
+            cuerpo="Párrafo 1\n\n\n\nPárrafo 2",
+            creado_por=self.user
+        )
+        resp_pdf = self.client.get(f'/documentos/{doc.pk}/pdf/')
+        self.assertEqual(resp_pdf.status_code, 200)
+        pdf = PdfReader(BytesIO(resp_pdf.content))
+        texto_pdf = pdf.pages[0].extract_text()
+        self.assertIn('Párrafo 1', texto_pdf)
+        self.assertIn('Párrafo 2', texto_pdf)
+
+
+
 
 
 

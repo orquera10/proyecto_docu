@@ -239,7 +239,16 @@ def cuerpo_html(texto, para_pdf=False):
         linea = lineas[i]
         linea_strip = linea.strip()
         if not linea_strip:
-            i += 1
+            empty_count = 0
+            while i < total and not lineas[i].strip():
+                empty_count += 1
+                i += 1
+            # 1 línea vacía es el separador estándar entre párrafos.
+            # 2 o más líneas vacías consecutivas representan renglones en blanco intencionales.
+            # Al inicio del documento, cada línea vacía cuenta como renglón en blanco.
+            extra_blanks = empty_count if not salida else (empty_count - 1)
+            for _ in range(extra_blanks):
+                salida.append('<p style="margin-bottom:6pt;">&nbsp;</p>')
             continue
 
         # 1. Detección de Tabla Markdown

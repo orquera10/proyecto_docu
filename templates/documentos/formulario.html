@@ -1033,7 +1033,15 @@ function markdownToVisualHtml(md) {
     const trimmed = line.trim();
 
     if (!trimmed) {
-      i++;
+      let emptyCount = 0;
+      while (i < lines.length && !lines[i].trim()) {
+        emptyCount++;
+        i++;
+      }
+      const extraBlanks = out.length === 0 ? emptyCount : (emptyCount - 1);
+      for (let k = 0; k < extraBlanks; k++) {
+        out.push('<p><br></p>');
+      }
       continue;
     }
 
@@ -1256,7 +1264,7 @@ function visualToMarkdown() {
         return;
       }
       const text = cleanBlockText(inlineNodeToMarkdown(node));
-      if (text.trim()) blocks.push(text);
+      blocks.push(text);
       return;
     }
 
@@ -1268,10 +1276,30 @@ function visualToMarkdown() {
     }
 
     const fallbackText = cleanBlockText(inlineNodeToMarkdown(node));
-    if (fallbackText.trim()) blocks.push(fallbackText);
+    blocks.push(fallbackText);
   });
 
-  return blocks.join('\n\n');
+  // Construir markdown respetando bloques vacíos (renglones en blanco)
+  let mdOutput = '';
+  for (let idx = 0; idx < blocks.length; idx++) {
+    const b = blocks[idx];
+    if (b && b.trim()) {
+      if (!mdOutput) {
+        mdOutput = b;
+      } else {
+        mdOutput += '\n\n' + b;
+      }
+    } else {
+      // Bloque vacío = renglón en blanco intencional
+      if (!mdOutput) {
+        mdOutput = '\n';
+      } else {
+        mdOutput += '\n';
+      }
+    }
+  }
+
+  return mdOutput;
 }
 
 function syncVisualToMarkdown() {
