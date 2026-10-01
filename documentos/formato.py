@@ -179,8 +179,9 @@ def resolver_src_imagen(url_o_archivo, para_pdf=False):
 
 
 def formatear_linea_texto(texto_linea):
-    """Escapa HTML y luego aplica formato seguro para negrita, cursiva, subrayado y tachado."""
+    """Escapa HTML y luego aplica formato seguro para negrita, cursiva, subrayado, tachado y tabulaciones."""
     escaped = escape(texto_linea)
+    escaped = escaped.replace('\t', '&nbsp;&nbsp;&nbsp;&nbsp;')
     escaped = re.sub(r'\*\*(.+?)\*\*', r'<strong>\1</strong>', escaped)
     escaped = re.sub(r'(?<!\*)\*(?!\s)([^*]+?)(?<!\s)\*(?!\*)', r'<em>\1</em>', escaped)
     escaped = re.sub(r'&lt;u&gt;(.+?)&lt;/u&gt;', r'<u>\1</u>', escaped, flags=re.IGNORECASE)
@@ -353,8 +354,15 @@ def cuerpo_html(texto, para_pdf=False):
             marca_html = '&bull;' if marca == '•' else escape(marca)
             salida.append(f'<p class="doc-list-item" style="margin-left:{18 + nivel*14}pt; text-indent:-12pt; text-align:left; margin-bottom:4pt;">{marca_html}&nbsp; {contenido}</p>')
         else:
-            contenido = formatear_linea_texto(linea_strip)
-            salida.append(f'<p style="margin-bottom:6pt;">{contenido}</p>')
+            m_indent = re.match(r'^([ \t\u00a0]+)(.*)$', linea)
+            if m_indent:
+                indent_str = m_indent.group(1).replace('\t', '    ').replace('\u00a0', ' ')
+                nbsp_prefix = '&nbsp;' * len(indent_str)
+                contenido = formatear_linea_texto(m_indent.group(2).rstrip())
+                salida.append(f'<p style="margin-bottom:6pt;">{nbsp_prefix}{contenido}</p>')
+            else:
+                contenido = formatear_linea_texto(linea_strip)
+                salida.append(f'<p style="margin-bottom:6pt;">{contenido}</p>')
 
         i += 1
 

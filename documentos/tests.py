@@ -1139,6 +1139,59 @@ class FirmaSelectorTests(TestCase):
         self.assertIn('Alexander Magaña', texto_pdf)
 
 
+class IndentacionTests(TestCase):
+    def setUp(self):
+        self.user = User.objects.create_user(username='user_indent', password='password123')
+        self.client.login(username='user_indent', password='password123')
+
+    def test_cuerpo_html_renderiza_sangria_con_espacios_y_tab(self):
+        # 4 espacios iniciales (1 tab)
+        cuerpo_con_espacios = "    Tengo el agrado de dirigirme a usted..."
+        html_espacios = cuerpo_html(cuerpo_con_espacios)
+        self.assertIn('&nbsp;&nbsp;&nbsp;&nbsp;Tengo el agrado de dirigirme a usted...', html_espacios)
+
+        # Tabulador inicial \t
+        cuerpo_con_tab = "\tPor medio de la presente, informo las novedades..."
+        html_tab = cuerpo_html(cuerpo_con_tab)
+        self.assertIn('&nbsp;&nbsp;&nbsp;&nbsp;Por medio de la presente, informo las novedades...', html_tab)
+
+        # Doble sangría (8 espacios / 2 tabs)
+        cuerpo_doble = "        Sub-párrafo con mayor sangría."
+        html_doble = cuerpo_html(cuerpo_doble)
+        self.assertIn('&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Sub-párrafo con mayor sangría.', html_doble)
+
+    def test_documento_con_sangria_pdf_y_html(self):
+        doc = Documento.objects.create(
+            tipo='NOTA',
+            fecha=date(2026, 10, 1),
+            asunto='Nota con sangría de párrafo',
+            remitente='Área de Informática',
+            destinatario_cargo='A LA SECRETARIA DE NIÑEZ',
+            cuerpo="    Párrafo 1 con sangría de primera línea.\n\n    Párrafo 2 con sangría de primera línea.",
+            creado_por=self.user
+        )
+
+        # Vista detalle
+        resp_det = self.client.get(f'/documentos/{doc.pk}/')
+        self.assertEqual(resp_det.status_code, 200)
+        self.assertContains(resp_det, '&nbsp;&nbsp;&nbsp;&nbsp;Párrafo 1 con sangría')
+
+        # PDF
+        resp_pdf = self.client.get(f'/documentos/{doc.pk}/pdf/')
+        self.assertEqual(resp_pdf.status_code, 200)
+        pdf = PdfReader(BytesIO(resp_pdf.content))
+        texto_pdf = pdf.pages[0].extract_text()
+        self.assertIn('Párrafo 1 con sangría', texto_pdf)
+        self.assertIn('Párrafo 2 con sangría', texto_pdf)
+
+    def test_formulario_contiene_boton_sangria(self):
+        resp = self.client.get('/documentos/nuevo/')
+        self.assertEqual(resp.status_code, 200)
+        self.assertContains(resp, 'Sangría (Tab)')
+        self.assertContains(resp, "formatVisual('indent')")
+
+
+
 
 
 

@@ -293,6 +293,14 @@
             <span style="font-size:11px;font-weight:700;">1.</span>
           </button>
           <span class="toolbar-separator"></span>
+          <button type="button" class="toolbar-btn" onclick="formatVisual('indent')" title="Sangría / Tabulación (Tecla Tab)" style="display: flex; align-items: center; gap: 4px; padding: 4px 8px; width: auto; font-size: 11.5px; font-weight: 600; color: #334155;">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="13 17 18 12 13 7"></polyline>
+              <polyline points="6 17 11 12 6 7"></polyline>
+            </svg>
+            <span>Sangría (Tab)</span>
+          </button>
+          <span class="toolbar-separator"></span>
           <button type="button" class="toolbar-btn" onclick="triggerEditorImageUpload()" title="Insertar imagen en el texto (en la posición del cursor)" style="display: flex; align-items: center; gap: 5px; padding: 4px 10px; width: auto; color: var(--primary); background: #eff6ff; border-radius: var(--radius-sm); border: 1px solid #bfdbfe;">
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
@@ -1080,8 +1088,16 @@ function markdownToVisualHtml(md) {
       continue;
     }
 
-    // 5. Párrafo común
-    out.push(`<p>${inlineMdToHtml(trimmed)}</p>`);
+    // 5. Párrafo común (con soporte de sangría / tabulación)
+    const mIndent = lines[i].match(/^([ \t\u00a0]+)(.*)$/);
+    if (mIndent) {
+      const indentStr = mIndent[1].replace(/\t/g, '    ').replace(/\u00a0/g, ' ');
+      const nbspPrefix = '&nbsp;'.repeat(indentStr.length);
+      const content = mIndent[2].replace(/[ \t\r\n]+$/, '');
+      out.push(`<p>${nbspPrefix}${inlineMdToHtml(content)}</p>`);
+    } else {
+      out.push(`<p>${inlineMdToHtml(trimmed)}</p>`);
+    }
     i++;
   }
 
@@ -1091,7 +1107,7 @@ function markdownToVisualHtml(md) {
 function inlineNodeToMarkdown(node) {
   if (!node) return '';
   if (node.nodeType === Node.TEXT_NODE) {
-    return node.nodeValue;
+    return node.nodeValue.replace(/\u00a0/g, ' ');
   }
   if (node.nodeType === Node.ELEMENT_NODE) {
     const tag = node.tagName.toUpperCase();
@@ -1103,24 +1119,31 @@ function inlineNodeToMarkdown(node) {
     });
 
     if (tag === 'B' || tag === 'STRONG') {
-      inner = inner.trim();
-      return inner ? `**${inner}**` : '';
+      const trimmed = inner.trim();
+      return trimmed ? `**${trimmed}**` : '';
     }
     if (tag === 'I' || tag === 'EM') {
-      inner = inner.trim();
-      return inner ? `*${inner}*` : '';
+      const trimmed = inner.trim();
+      return trimmed ? `*${trimmed}*` : '';
     }
     if (tag === 'U') {
-      inner = inner.trim();
-      return inner ? `<u>${inner}</u>` : '';
+      const trimmed = inner.trim();
+      return trimmed ? `<u>${trimmed}</u>` : '';
     }
     if (tag === 'S' || tag === 'STRIKE' || tag === 'DEL') {
-      inner = inner.trim();
-      return inner ? `~~${inner}~~` : '';
+      const trimmed = inner.trim();
+      return trimmed ? `~~${trimmed}~~` : '';
     }
     return inner;
   }
   return '';
+}
+
+function cleanBlockText(rawText) {
+  if (!rawText) return '';
+  const normalized = rawText.replace(/\u00a0/g, ' ');
+  // Quitar espacios/saltos al final pero preservar la sangría inicial
+  return normalized.replace(/[ \t\r\n]+$/, '');
 }
 
 function visualToMarkdown() {
@@ -1232,8 +1255,8 @@ function visualToMarkdown() {
         if (listLines.length > 0) blocks.push(listLines.join('\n'));
         return;
       }
-      const text = inlineNodeToMarkdown(node).trim();
-      if (text) blocks.push(text);
+      const text = cleanBlockText(inlineNodeToMarkdown(node));
+      if (text.trim()) blocks.push(text);
       return;
     }
 
@@ -1244,8 +1267,8 @@ function visualToMarkdown() {
       return;
     }
 
-    const fallbackText = inlineNodeToMarkdown(node).trim();
-    if (fallbackText) blocks.push(fallbackText);
+    const fallbackText = cleanBlockText(inlineNodeToMarkdown(node));
+    if (fallbackText.trim()) blocks.push(fallbackText);
   });
 
   return blocks.join('\n\n');
@@ -1303,12 +1326,70 @@ function formatVisual(command) {
     else if (command === 'strikeThrough') insertFormat('~~', '~~');
     else if (command === 'insertUnorderedList') insertLinePrefix('• ');
     else if (command === 'insertOrderedList') insertNumberedList();
+    else if (command === 'indent') {
+      const textarea = document.getElementById('id_cuerpo');
+      if (textarea) {
+        const start = textarea.selectionStart;
+        const end = textarea.selectionEnd;
+        const value = textarea.value;
+        textarea.value = value.substring(0, start) + '    ' + value.substring(end);
+        textarea.selectionStart = textarea.selectionEnd = start + 4;
+        textarea.focus();
+        syncMarkdownToVisual();
+      }
+    } else if (command === 'outdent') {
+      const textarea = document.getElementById('id_cuerpo');
+      if (textarea) {
+        const start = textarea.selectionStart;
+        const end = textarea.selectionEnd;
+        const value = textarea.value;
+        const before = value.substring(0, start);
+        const lineStart = before.lastIndexOf('\n') + 1;
+        const lineText = value.substring(lineStart, end);
+        const outdented = lineText.replace(/^ {1,4}/, '');
+        textarea.value = value.substring(0, lineStart) + outdented + value.substring(end);
+        textarea.selectionStart = Math.max(lineStart, start - (lineText.length - outdented.length));
+        textarea.selectionEnd = textarea.selectionStart;
+        textarea.focus();
+        syncMarkdownToVisual();
+      }
+    }
     return;
   }
 
   const visual = document.getElementById('editor-visual');
   if (!visual) return;
   visual.focus();
+
+  if (command === 'indent') {
+    document.execCommand('insertText', false, '\u00a0\u00a0\u00a0\u00a0');
+    syncVisualToMarkdown();
+    return;
+  }
+
+  if (command === 'outdent') {
+    const sel = window.getSelection();
+    if (sel && sel.rangeCount > 0) {
+      const range = sel.getRangeAt(0);
+      if (range.startContainer && range.startContainer.nodeType === Node.TEXT_NODE) {
+        const txt = range.startContainer.nodeValue;
+        const offset = range.startOffset;
+        const before = txt.substring(0, offset);
+        const matchSpaces = before.match(/([ \u00a0]{1,4})$/);
+        if (matchSpaces) {
+          const toRemove = matchSpaces[1].length;
+          range.startContainer.nodeValue = txt.substring(0, offset - toRemove) + txt.substring(offset);
+          range.setStart(range.startContainer, offset - toRemove);
+          range.collapse(true);
+          sel.removeAllRanges();
+          sel.addRange(range);
+        }
+      }
+    }
+    syncVisualToMarkdown();
+    return;
+  }
+
   document.execCommand(command, false, null);
   syncVisualToMarkdown();
 }
@@ -1610,6 +1691,15 @@ function handleVisualKeydown(e) {
       }
       return;
     }
+
+    // Tab o Shift+Tab en texto común / párrafos
+    e.preventDefault();
+    if (!e.shiftKey) {
+      formatVisual('indent');
+    } else {
+      formatVisual('outdent');
+    }
+    return;
   }
 
   if ((e.ctrlKey || e.metaKey) && !e.altKey) {
@@ -1674,6 +1764,42 @@ window.addEventListener('DOMContentLoaded', () => {
       visual.addEventListener(evt, () => {
         saveVisualRange();
       });
+    });
+  }
+
+  const textarea = document.getElementById('id_cuerpo');
+  if (textarea) {
+    textarea.addEventListener('keydown', (e) => {
+      if (e.key === 'Tab') {
+        e.preventDefault();
+        const start = textarea.selectionStart;
+        const end = textarea.selectionEnd;
+        const value = textarea.value;
+
+        if (!e.shiftKey) {
+          if (start === end) {
+            textarea.value = value.substring(0, start) + '    ' + value.substring(end);
+            textarea.selectionStart = textarea.selectionEnd = start + 4;
+          } else {
+            const before = value.substring(0, start);
+            const lineStart = before.lastIndexOf('\n') + 1;
+            const selectedText = value.substring(lineStart, end);
+            const indented = selectedText.split('\n').map(l => '    ' + l).join('\n');
+            textarea.value = value.substring(0, lineStart) + indented + value.substring(end);
+            textarea.selectionStart = start + 4;
+            textarea.selectionEnd = lineStart + indented.length;
+          }
+        } else {
+          const before = value.substring(0, start);
+          const lineStart = before.lastIndexOf('\n') + 1;
+          const selectedText = value.substring(lineStart, end);
+          const outdented = selectedText.split('\n').map(l => l.replace(/^ {1,4}/, '')).join('\n');
+          textarea.value = value.substring(0, lineStart) + outdented + value.substring(end);
+          textarea.selectionStart = Math.max(lineStart, start - 4);
+          textarea.selectionEnd = lineStart + outdented.length;
+        }
+        syncMarkdownToVisual();
+      }
     });
   }
 
