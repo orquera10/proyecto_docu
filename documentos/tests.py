@@ -1029,6 +1029,117 @@ class DashboardYBusquedaGlobalTests(TestCase):
         self.assertContains(resp, 'Enviado por correo oficial a direccion@snaf.gob.ar con copia a Despacho.')
 
 
+class FirmaSelectorTests(TestCase):
+    def setUp(self):
+        self.user = User.objects.create_user(username='admin_firma', password='password123', first_name='Darío', last_name='Orquera')
+        self.client.login(username='admin_firma', password='password123')
+
+    def test_formulario_nuevo_contiene_selector_firmas(self):
+        resp = self.client.get('/documentos/nuevo/')
+        self.assertEqual(resp.status_code, 200)
+        self.assertContains(resp, 'Firmas al Pie del Documento')
+        self.assertContains(resp, 'Darío y Alex (Ambos)')
+        self.assertContains(resp, 'Solo Darío')
+        self.assertContains(resp, 'Solo Alex')
+        self.assertContains(resp, 'id="id_firma"')
+        self.assertContains(resp, 'selectFirma')
+
+    def test_crear_documento_con_firma_solo_dario(self):
+        datos = {
+            'tipo': 'NOTA',
+            'fecha': '2026-10-01',
+            'asunto': 'Nota firmada solo por Darío',
+            'remitente': 'Área de Informática',
+            'destinatario_cargo': 'A LA SECRETARIA',
+            'destinatario_nombre': 'DRA. MARTA IRIARTE',
+            'cuerpo': 'Contenido de prueba.',
+            'estado': 'EMITIDO',
+            'firma': 'DARIO',
+            'accion_guardar': 'emitir',
+        }
+        resp = self.client.post('/documentos/nuevo/', datos, follow=True)
+        self.assertEqual(resp.status_code, 200)
+        doc = Documento.objects.get(asunto='Nota firmada solo por Darío')
+        self.assertEqual(doc.firma, 'DARIO')
+
+        # Vista Detalle HTML
+        resp_det = self.client.get(f'/documentos/{doc.pk}/')
+        self.assertEqual(resp_det.status_code, 200)
+        self.assertContains(resp_det, 'Darío Joaquín Orquera')
+        self.assertNotContains(resp_det, 'Alexander Magaña')
+
+        # Generación PDF
+        resp_pdf = self.client.get(f'/documentos/{doc.pk}/pdf/')
+        self.assertEqual(resp_pdf.status_code, 200)
+        pdf = PdfReader(BytesIO(resp_pdf.content))
+        texto_pdf = pdf.pages[0].extract_text()
+        self.assertIn('Darío Joaquín Orquera', texto_pdf)
+        self.assertNotIn('Alexander Magaña', texto_pdf)
+
+    def test_crear_documento_con_firma_solo_alex(self):
+        datos = {
+            'tipo': 'INFORME',
+            'fecha': '2026-10-01',
+            'asunto': 'Informe firmado solo por Alex',
+            'remitente': 'Área de Informática',
+            'destinatario_cargo': 'A LA DIRECTORA',
+            'cuerpo': 'Contenido técnico de prueba.',
+            'estado': 'EMITIDO',
+            'firma': 'ALEX',
+            'accion_guardar': 'emitir',
+        }
+        resp = self.client.post('/documentos/nuevo/', datos, follow=True)
+        self.assertEqual(resp.status_code, 200)
+        doc = Documento.objects.get(asunto='Informe firmado solo por Alex')
+        self.assertEqual(doc.firma, 'ALEX')
+
+        # Vista Detalle HTML
+        resp_det = self.client.get(f'/documentos/{doc.pk}/')
+        self.assertEqual(resp_det.status_code, 200)
+        self.assertContains(resp_det, 'Alexander Magaña')
+        self.assertNotContains(resp_det, 'Darío Joaquín Orquera')
+
+        # Generación PDF
+        resp_pdf = self.client.get(f'/documentos/{doc.pk}/pdf/')
+        self.assertEqual(resp_pdf.status_code, 200)
+        pdf = PdfReader(BytesIO(resp_pdf.content))
+        texto_pdf = pdf.pages[0].extract_text()
+        self.assertIn('Alexander Magaña', texto_pdf)
+        self.assertNotIn('Darío Joaquín Orquera', texto_pdf)
+
+    def test_crear_documento_con_ambas_firmas(self):
+        datos = {
+            'tipo': 'NOTA',
+            'fecha': '2026-10-01',
+            'asunto': 'Nota firmada por ambos',
+            'remitente': 'Área de Informática',
+            'destinatario_cargo': 'A LA SECRETARIA',
+            'cuerpo': 'Contenido conjunto.',
+            'estado': 'EMITIDO',
+            'firma': 'AMBOS',
+            'accion_guardar': 'emitir',
+        }
+        resp = self.client.post('/documentos/nuevo/', datos, follow=True)
+        self.assertEqual(resp.status_code, 200)
+        doc = Documento.objects.get(asunto='Nota firmada por ambos')
+        self.assertEqual(doc.firma, 'AMBOS')
+
+        # Vista Detalle HTML
+        resp_det = self.client.get(f'/documentos/{doc.pk}/')
+        self.assertEqual(resp_det.status_code, 200)
+        self.assertContains(resp_det, 'Darío Joaquín Orquera')
+        self.assertContains(resp_det, 'Alexander Magaña')
+
+        # Generación PDF
+        resp_pdf = self.client.get(f'/documentos/{doc.pk}/pdf/')
+        self.assertEqual(resp_pdf.status_code, 200)
+        pdf = PdfReader(BytesIO(resp_pdf.content))
+        texto_pdf = pdf.pages[0].extract_text()
+        self.assertIn('Darío Joaquín Orquera', texto_pdf)
+        self.assertIn('Alexander Magaña', texto_pdf)
+
+
+
 
 
 

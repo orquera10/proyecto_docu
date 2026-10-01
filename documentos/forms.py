@@ -5,10 +5,11 @@ from .models import Documento, ItemActa, NotaRecibida
 
 class DocumentoForm(forms.ModelForm):
     estado = forms.ChoiceField(choices=Documento.ESTADO_CHOICES, required=False, initial='EMITIDO')
+    firma = forms.ChoiceField(choices=Documento.FIRMA_CHOICES, required=False, initial='AMBOS')
 
     class Meta:
         model = Documento
-        fields = ['tipo', 'fecha', 'asunto', 'remitente', 'destinatario', 'destinatario_cargo', 'destinatario_nombre', 'receptor_nombre', 'receptor_dni', 'cuerpo', 'estado']
+        fields = ['tipo', 'fecha', 'asunto', 'remitente', 'destinatario', 'destinatario_cargo', 'destinatario_nombre', 'receptor_nombre', 'receptor_dni', 'cuerpo', 'estado', 'firma']
         widgets = {
             'tipo': forms.Select(attrs={'class': 'form-control', 'id': 'id_tipo'}),
             'fecha': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
@@ -21,6 +22,7 @@ class DocumentoForm(forms.ModelForm):
             'receptor_dni': forms.TextInput(attrs={'class': 'form-input-styled', 'placeholder': 'DNI de quien recibe (o dejar en blanco)'}),
             'cuerpo': forms.Textarea(attrs={'class': 'form-control', 'rows': 10, 'placeholder': 'Redacte aquí el contenido del documento...'}),
             'estado': forms.Select(attrs={'class': 'form-control'}),
+            'firma': forms.Select(attrs={'class': 'form-control', 'id': 'id_firma'}),
         }
         labels = {
             'tipo': 'Tipo de Documento',
@@ -34,6 +36,7 @@ class DocumentoForm(forms.ModelForm):
             'receptor_dni': 'DNI de quien Recibe',
             'cuerpo': 'Contenido',
             'estado': 'Estado',
+            'firma': 'Firmas en el Documento',
         }
 
     def __init__(self, *args, **kwargs):

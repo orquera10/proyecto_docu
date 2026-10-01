@@ -190,7 +190,7 @@
     <table cellpadding="0" cellspacing="0" style="width: 100%; margin-bottom: 24pt;">
       <tr>
         <td style="border: 1px solid #000000; padding: 2.5pt 5pt; font-weight: bold; font-size: 8.5pt;">
-          AUTORIZA ENTREGA: {{ doc.remitente|default:"Darío Joaquín Orquera" }}
+          AUTORIZA ENTREGA: {% if doc.firma == 'ALEX' %}Alexander Magaña{% elif doc.firma == 'DARIO' %}Darío Joaquín Orquera{% elif doc.firma == 'AMBOS' %}Alexander Magaña / Darío Joaquín Orquera{% else %}{{ doc.remitente|default:"Darío Joaquín Orquera" }}{% endif %}
         </td>
       </tr>
     </table>
@@ -302,7 +302,7 @@
     <table cellpadding="0" cellspacing="0" style="width: 100%; margin-bottom: 24pt;">
       <tr>
         <td style="border: 1px solid #000000; padding: 2.5pt 5pt; font-weight: bold; font-size: 8.5pt;">
-          AUTORIZA ENTREGA: {{ doc.remitente|default:"Darío Joaquín Orquera" }}
+          AUTORIZA ENTREGA: {% if doc.firma == 'ALEX' %}Alexander Magaña{% elif doc.firma == 'DARIO' %}Darío Joaquín Orquera{% elif doc.firma == 'AMBOS' %}Alexander Magaña / Darío Joaquín Orquera{% else %}{{ doc.remitente|default:"Darío Joaquín Orquera" }}{% endif %}
         </td>
       </tr>
     </table>

@@ -41,7 +41,7 @@
       <!-- Selector de Tipo por Píldoras -->
       <div class="form-field-group" style="margin-bottom: 0;">
         <label class="form-field-label">Tipo de Documento</label>
-        <div class="pill-selector-group">
+        <div class="pill-selector-group" id="type-selector-group">
           <!-- Campos ocultos para Django Form -->
           <input type="hidden" name="tipo" id="id_tipo" value="{{ form.tipo.value|default:'NOTA' }}">
           <input type="hidden" name="estado" id="id_estado" value="{{ form.estado.value|default:'EMITIDO' }}">
@@ -243,6 +243,36 @@
         <input type="text" name="asunto" id="id_asunto" class="form-input-styled" value="{{ form.asunto.value|default:'' }}" placeholder="Ej: Mantenimiento planificado y migración del servidor de Base de Datos principal" required>
       </div>
       {% if form.asunto.errors %}<div style="color:#ef4444;font-size:12px;margin-top:4px;">{{ form.asunto.errors }}</div>{% endif %}
+    </div>
+
+    <!-- Fila: Selector de Firmas Autorizadas -->
+    <div class="form-field-group" style="margin-top: 4px; margin-bottom: 22px;">
+      <label class="form-field-label" style="display: flex; justify-content: space-between; align-items: center;">
+        <span style="display: flex; align-items: center; gap: 6px;">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path>
+          </svg>
+          Firmas al Pie del Documento
+        </span>
+        <span style="font-size: 11px; font-weight: 500; color: var(--text-muted);">Seleccione los firmantes que figurarán en el documento</span>
+      </label>
+      <div class="pill-selector-group" id="signature-selector-group">
+        <input type="hidden" name="firma" id="id_firma" value="{{ form.firma.value|default:'AMBOS' }}">
+
+        <button type="button" class="pill-radio-item {% if form.firma.value == 'AMBOS' or not form.firma.value %}selected{% endif %}" onclick="selectFirma('AMBOS', this)">
+          <span class="pill-indicator-dot"></span>
+          <span>Darío y Alex (Ambos)</span>
+        </button>
+        <button type="button" class="pill-radio-item {% if form.firma.value == 'DARIO' %}selected{% endif %}" onclick="selectFirma('DARIO', this)">
+          <span class="pill-indicator-dot"></span>
+          <span>Solo Darío</span>
+        </button>
+        <button type="button" class="pill-radio-item {% if form.firma.value == 'ALEX' %}selected{% endif %}" onclick="selectFirma('ALEX', this)">
+          <span class="pill-indicator-dot"></span>
+          <span>Solo Alex</span>
+        </button>
+      </div>
+      {% if form.firma.errors %}<div style="color:#ef4444;font-size:12px;margin-top:4px;">{{ form.firma.errors }}</div>{% endif %}
     </div>
 
     <!-- Fila 4: Cuerpo del Documento con Toolbar -->
@@ -568,17 +598,21 @@ function selectDocType(type, btnElement, initialKey) {
     hiddenInput.value = type;
   }
 
-  // Si no se pasó btnElement, buscar el botón correspondiente
-  if (!btnElement) {
-    document.querySelectorAll('.pill-radio-item').forEach(b => {
+  const typeGroup = document.getElementById('type-selector-group') || (btnElement ? btnElement.closest('.pill-selector-group') : null);
+
+  // Si no se pasó btnElement, buscar el botón correspondiente dentro del grupo de tipo
+  if (!btnElement && typeGroup) {
+    typeGroup.querySelectorAll('.pill-radio-item').forEach(b => {
       if (b.textContent.includes('Nota') && type === 'NOTA') btnElement = b;
       if (b.textContent.includes('Informe') && type === 'INFORME') btnElement = b;
       if (b.textContent.includes('Acta') && type === 'ACTA') btnElement = b;
     });
   }
 
-  // Actualizar estado visual de los botones píldora
-  document.querySelectorAll('.pill-radio-item').forEach(btn => btn.classList.remove('selected'));
+  // Actualizar estado visual de los botones píldora de tipo
+  if (typeGroup) {
+    typeGroup.querySelectorAll('.pill-radio-item').forEach(btn => btn.classList.remove('selected'));
+  }
   if (btnElement) {
     btnElement.classList.add('selected');
   }
@@ -645,6 +679,21 @@ function selectDocType(type, btnElement, initialKey) {
 
   // Habilitar y filtrar únicamente los preformatos de este tipo
   actualizarPreformatosPorTipo(type, initialKey);
+}
+
+// Selector de Firmas Autorizadas
+function selectFirma(val, btnElement) {
+  const hiddenInput = document.getElementById('id_firma');
+  if (hiddenInput) {
+    hiddenInput.value = val;
+  }
+  const signatureGroup = document.getElementById('signature-selector-group') || (btnElement ? btnElement.closest('.pill-selector-group') : null);
+  if (signatureGroup) {
+    signatureGroup.querySelectorAll('.pill-radio-item').forEach(b => b.classList.remove('selected'));
+  }
+  if (btnElement) {
+    btnElement.classList.add('selected');
+  }
 }
 
 // ─── Diccionario de Preformatos Oficiales SNAF Informática ──────────────────
@@ -1158,10 +1207,40 @@ function visualToMarkdown() {
       return;
     }
 
-    // 5. Párrafos o Divs
+    // 5. Párrafos o Divs — pueden contener listas anidadas (browsers wraps UL/OL in DIV/P)
     if (tag === 'P' || tag === 'DIV') {
+      // Detectar lista no ordenada anidada (execCommand la mete dentro de un div)
+      const nestedUl = node.querySelector('ul');
+      const nestedOl = node.querySelector('ol');
+      if (nestedUl) {
+        const lis = nestedUl.querySelectorAll('li');
+        const listLines = [];
+        lis.forEach(li => {
+          const text = inlineNodeToMarkdown(li).trim();
+          if (text) listLines.push(`• ${text}`);
+        });
+        if (listLines.length > 0) blocks.push(listLines.join('\n'));
+        return;
+      }
+      if (nestedOl) {
+        const lis = nestedOl.querySelectorAll('li');
+        const listLines = [];
+        lis.forEach((li, idx) => {
+          const text = inlineNodeToMarkdown(li).trim();
+          if (text) listLines.push(`${idx + 1}. ${text}`);
+        });
+        if (listLines.length > 0) blocks.push(listLines.join('\n'));
+        return;
+      }
       const text = inlineNodeToMarkdown(node).trim();
       if (text) blocks.push(text);
+      return;
+    }
+
+    // 6. LI suelto (algunos navegadores lo generan así)
+    if (tag === 'LI') {
+      const text = inlineNodeToMarkdown(node).trim();
+      if (text) blocks.push(`• ${text}`);
       return;
     }
 

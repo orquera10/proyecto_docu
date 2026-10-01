@@ -169,7 +169,38 @@
   </div>
   {% endif %}
 
-  <!-- FIRMAS DOBLES AL MISMO NIVEL -->
+  <!-- FIRMAS AL PIE SEGÚN SELECCIÓN -->
+  {% if doc.firma == 'DARIO' %}
+  <table class="firmas-tabla" cellpadding="0" cellspacing="0" style="margin-top: {{ firma_margin_top|default:25 }}pt;">
+    <tr>
+      <td align="center">
+        <div class="firma-caja">
+          <table cellpadding="0" cellspacing="0" style="width: 100%;">
+            <tr><td class="firma-linea-td">
+              <div class="firma-nombre">Darío Joaquín Orquera</div>
+              <div class="firma-cargo">Departamento Informática</div>
+            </td></tr>
+          </table>
+        </div>
+      </td>
+    </tr>
+  </table>
+  {% elif doc.firma == 'ALEX' %}
+  <table class="firmas-tabla" cellpadding="0" cellspacing="0" style="margin-top: {{ firma_margin_top|default:25 }}pt;">
+    <tr>
+      <td align="center">
+        <div class="firma-caja">
+          <table cellpadding="0" cellspacing="0" style="width: 100%;">
+            <tr><td class="firma-linea-td">
+              <div class="firma-nombre">Alexander Magaña</div>
+              <div class="firma-cargo">Departamento Informática</div>
+            </td></tr>
+          </table>
+        </div>
+      </td>
+    </tr>
+  </table>
+  {% else %}
   <table class="firmas-tabla" cellpadding="0" cellspacing="0" style="margin-top: {{ firma_margin_top|default:25 }}pt;">
     <tr>
       <td class="firma-columna">
@@ -195,6 +226,7 @@
       </td>
     </tr>
   </table>
+  {% endif %}
 
   <!-- PIE DE PÁGINA -->
   <div id="pie" class="footer">

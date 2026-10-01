@@ -546,6 +546,7 @@ def crear_documento(request):
             'fecha': date.today(),
             'remitente': remitente_default,
             'estado': 'EMITIDO',
+            'firma': 'AMBOS',
         }
 
         formset = ItemActaFormSet(prefix='items')
@@ -573,6 +574,7 @@ def crear_documento(request):
                     'receptor_nombre': doc_base.receptor_nombre,
                     'receptor_dni': doc_base.receptor_dni,
                     'cuerpo': doc_base.cuerpo,
+                    'firma': doc_base.firma or 'AMBOS',
                 })
                 if doc_base.tipo == 'ACTA':
                     items_base = list(doc_base.items.values('cantidad', 'descripcion', 'numero_serie', 'codigo_inventario', 'condicion', 'observaciones'))
